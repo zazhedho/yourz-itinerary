@@ -6,10 +6,10 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
-	domainaudit "starter-kit/internal/domain/audit"
-	"starter-kit/internal/dto"
-	"starter-kit/pkg/filter"
 	"testing"
+	domainaudit "yourz-itinerary/internal/domain/audit"
+	"yourz-itinerary/internal/dto"
+	"yourz-itinerary/pkg/filter"
 
 	"github.com/gin-gonic/gin"
 )

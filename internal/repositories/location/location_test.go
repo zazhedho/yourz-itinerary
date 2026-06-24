@@ -2,8 +2,8 @@ package repositorylocation
 
 import (
 	"context"
-	domainlocation "starter-kit/internal/domain/location"
 	"testing"
+	domainlocation "yourz-itinerary/internal/domain/location"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"gorm.io/driver/postgres"

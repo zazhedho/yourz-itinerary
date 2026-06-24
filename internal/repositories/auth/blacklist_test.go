@@ -3,9 +3,9 @@ package repositoryauth
 import (
 	"context"
 	"errors"
-	domainauth "starter-kit/internal/domain/auth"
 	"testing"
 	"time"
+	domainauth "yourz-itinerary/internal/domain/auth"
 )
 
 func expectPanic(t *testing.T, fn func()) {

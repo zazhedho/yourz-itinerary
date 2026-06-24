@@ -2,10 +2,10 @@ package repositoryuser
 
 import (
 	"context"
-	domainuser "starter-kit/internal/domain/user"
-	interfaceuser "starter-kit/internal/interfaces/user"
-	repositorygeneric "starter-kit/internal/repositories/generic"
-	"starter-kit/pkg/filter"
+	domainuser "yourz-itinerary/internal/domain/user"
+	interfaceuser "yourz-itinerary/internal/interfaces/user"
+	repositorygeneric "yourz-itinerary/internal/repositories/generic"
+	"yourz-itinerary/pkg/filter"
 
 	"gorm.io/gorm"
 )

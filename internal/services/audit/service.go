@@ -3,13 +3,13 @@ package serviceaudit
 import (
 	"context"
 	"errors"
-	domainaudit "starter-kit/internal/domain/audit"
-	"starter-kit/internal/dto"
-	interfaceaudit "starter-kit/internal/interfaces/audit"
-	"starter-kit/pkg/filter"
-	"starter-kit/utils"
 	"strings"
 	"time"
+	domainaudit "yourz-itinerary/internal/domain/audit"
+	"yourz-itinerary/internal/dto"
+	interfaceaudit "yourz-itinerary/internal/interfaces/audit"
+	"yourz-itinerary/pkg/filter"
+	"yourz-itinerary/utils"
 )
 
 type AuditService struct {

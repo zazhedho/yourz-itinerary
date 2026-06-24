@@ -3,9 +3,9 @@ package servicereset
 import (
 	"context"
 	"errors"
-	"starter-kit/pkg/config"
 	"testing"
 	"time"
+	"yourz-itinerary/pkg/config"
 
 	"github.com/redis/go-redis/v9"
 )

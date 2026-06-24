@@ -3,14 +3,14 @@ package servicerole
 import (
 	"context"
 	"errors"
-	"starter-kit/internal/authscope"
-	domainmenu "starter-kit/internal/domain/menu"
-	domainpermission "starter-kit/internal/domain/permission"
-	domainrole "starter-kit/internal/domain/role"
-	"starter-kit/internal/dto"
-	"starter-kit/pkg/filter"
-	"starter-kit/utils"
 	"testing"
+	"yourz-itinerary/internal/authscope"
+	domainmenu "yourz-itinerary/internal/domain/menu"
+	domainpermission "yourz-itinerary/internal/domain/permission"
+	domainrole "yourz-itinerary/internal/domain/role"
+	"yourz-itinerary/internal/dto"
+	"yourz-itinerary/pkg/filter"
+	"yourz-itinerary/utils"
 )
 
 func roleAuthContext(userID, username, role string, permissions ...string) context.Context {

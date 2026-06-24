@@ -3,10 +3,10 @@ package configvalue
 import (
 	"encoding/json"
 	"fmt"
-	"starter-kit/utils"
 	"strconv"
 	"strings"
 	"time"
+	"yourz-itinerary/utils"
 )
 
 func String(raw string, fallback string) string {

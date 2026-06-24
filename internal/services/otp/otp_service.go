@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	interfaceotp "starter-kit/internal/interfaces/otp"
-	"starter-kit/pkg/config"
-	"starter-kit/pkg/logger"
-	"starter-kit/pkg/mailer"
-	"starter-kit/utils"
 	"strings"
 	"time"
+	interfaceotp "yourz-itinerary/internal/interfaces/otp"
+	"yourz-itinerary/pkg/config"
+	"yourz-itinerary/pkg/logger"
+	"yourz-itinerary/pkg/mailer"
+	"yourz-itinerary/utils"
 
 	"github.com/redis/go-redis/v9"
 )

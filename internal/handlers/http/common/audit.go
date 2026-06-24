@@ -3,11 +3,11 @@ package handlercommon
 import (
 	"fmt"
 
-	"starter-kit/internal/authscope"
-	domainaudit "starter-kit/internal/domain/audit"
-	interfaceaudit "starter-kit/internal/interfaces/audit"
-	"starter-kit/pkg/logger"
-	"starter-kit/utils"
+	"yourz-itinerary/internal/authscope"
+	domainaudit "yourz-itinerary/internal/domain/audit"
+	interfaceaudit "yourz-itinerary/internal/interfaces/audit"
+	"yourz-itinerary/pkg/logger"
+	"yourz-itinerary/utils"
 
 	"github.com/gin-gonic/gin"
 )

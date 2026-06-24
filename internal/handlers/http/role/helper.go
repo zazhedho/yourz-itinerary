@@ -3,11 +3,11 @@ package handlerrole
 import (
 	"errors"
 	"net/http"
-	domainaudit "starter-kit/internal/domain/audit"
-	handlercommon "starter-kit/internal/handlers/http/common"
-	"starter-kit/pkg/messages"
-	"starter-kit/pkg/response"
 	"strings"
+	domainaudit "yourz-itinerary/internal/domain/audit"
+	handlercommon "yourz-itinerary/internal/handlers/http/common"
+	"yourz-itinerary/pkg/messages"
+	"yourz-itinerary/pkg/response"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"

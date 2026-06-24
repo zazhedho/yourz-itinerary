@@ -9,7 +9,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"starter-kit/pkg/filter"
+	"yourz-itinerary/pkg/filter"
 )
 
 type sampleRecord struct {

@@ -3,7 +3,7 @@ package config
 import (
 	"time"
 
-	"starter-kit/utils"
+	"yourz-itinerary/utils"
 )
 
 type OTPConfig struct {

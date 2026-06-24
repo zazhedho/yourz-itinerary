@@ -3,8 +3,8 @@ package filter
 import (
 	"encoding/json"
 	"fmt"
-	"starter-kit/utils"
 	"strings"
+	"yourz-itinerary/utils"
 
 	"github.com/gin-gonic/gin"
 )

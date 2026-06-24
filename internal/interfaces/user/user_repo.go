@@ -2,8 +2,8 @@ package interfaceuser
 
 import (
 	"context"
-	domainuser "starter-kit/internal/domain/user"
-	interfacegeneric "starter-kit/internal/interfaces/generic"
+	domainuser "yourz-itinerary/internal/domain/user"
+	interfacegeneric "yourz-itinerary/internal/interfaces/generic"
 )
 
 type RepoUserInterface interface {

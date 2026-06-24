@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"html"
 	"net/smtp"
-	"starter-kit/utils"
 	"strconv"
 	"strings"
 	"time"
+	"yourz-itinerary/utils"
 )
 
 const defaultSMTPPort = 587

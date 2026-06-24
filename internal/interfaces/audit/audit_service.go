@@ -2,9 +2,9 @@ package interfaceaudit
 
 import (
 	"context"
-	domainaudit "starter-kit/internal/domain/audit"
-	"starter-kit/internal/dto"
-	"starter-kit/pkg/filter"
+	domainaudit "yourz-itinerary/internal/domain/audit"
+	"yourz-itinerary/internal/dto"
+	"yourz-itinerary/pkg/filter"
 )
 
 type ServiceAuditInterface interface {

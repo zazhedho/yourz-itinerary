@@ -3,10 +3,10 @@ package serviceaudit
 import (
 	"encoding/json"
 	"fmt"
-	domainaudit "starter-kit/internal/domain/audit"
-	"starter-kit/internal/dto"
-	"starter-kit/utils"
 	"strings"
+	domainaudit "yourz-itinerary/internal/domain/audit"
+	"yourz-itinerary/internal/dto"
+	"yourz-itinerary/utils"
 )
 
 func toAuditResponses(items []domainaudit.AuditTrail) []dto.AuditTrailResponse {

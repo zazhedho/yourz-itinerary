@@ -3,9 +3,9 @@ package middlewares
 import (
 	"fmt"
 	"net/http"
-	"starter-kit/pkg/logger"
-	"starter-kit/pkg/response"
-	"starter-kit/utils"
+	"yourz-itinerary/pkg/logger"
+	"yourz-itinerary/pkg/response"
+	"yourz-itinerary/utils"
 
 	"github.com/gin-gonic/gin"
 )

@@ -2,8 +2,8 @@ package interfacemenu
 
 import (
 	"context"
-	domainmenu "starter-kit/internal/domain/menu"
-	interfacegeneric "starter-kit/internal/interfaces/generic"
+	domainmenu "yourz-itinerary/internal/domain/menu"
+	interfacegeneric "yourz-itinerary/internal/interfaces/generic"
 )
 
 type RepoMenuInterface interface {

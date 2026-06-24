@@ -8,12 +8,12 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
-	locationcache "starter-kit/internal/cache/location"
-	domainlocation "starter-kit/internal/domain/location"
-	"starter-kit/internal/dto"
-	"starter-kit/utils"
 	"strings"
 	"time"
+	locationcache "yourz-itinerary/internal/cache/location"
+	domainlocation "yourz-itinerary/internal/domain/location"
+	"yourz-itinerary/internal/dto"
+	"yourz-itinerary/utils"
 
 	"github.com/redis/go-redis/v9"
 )

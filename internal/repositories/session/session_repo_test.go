@@ -2,9 +2,9 @@ package repositorysession
 
 import (
 	"context"
-	domainsession "starter-kit/internal/domain/session"
 	"testing"
 	"time"
+	domainsession "yourz-itinerary/internal/domain/session"
 )
 
 func expectPanic(t *testing.T, fn func()) {

@@ -3,10 +3,10 @@ package servicesession
 import (
 	"context"
 	"errors"
-	domainsession "starter-kit/internal/domain/session"
-	domainuser "starter-kit/internal/domain/user"
 	"testing"
 	"time"
+	domainsession "yourz-itinerary/internal/domain/session"
+	domainuser "yourz-itinerary/internal/domain/user"
 )
 
 type sessionRepoTestDouble struct {

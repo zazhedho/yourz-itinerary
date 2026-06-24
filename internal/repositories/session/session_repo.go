@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	domainsession "starter-kit/internal/domain/session"
-	"starter-kit/pkg/logger"
 	"time"
+	domainsession "yourz-itinerary/internal/domain/session"
+	"yourz-itinerary/pkg/logger"
 
 	"github.com/redis/go-redis/v9"
 )

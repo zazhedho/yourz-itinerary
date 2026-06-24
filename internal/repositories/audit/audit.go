@@ -2,10 +2,10 @@ package repositoryaudit
 
 import (
 	"context"
-	domainaudit "starter-kit/internal/domain/audit"
-	interfaceaudit "starter-kit/internal/interfaces/audit"
-	repositorygeneric "starter-kit/internal/repositories/generic"
-	"starter-kit/pkg/filter"
+	domainaudit "yourz-itinerary/internal/domain/audit"
+	interfaceaudit "yourz-itinerary/internal/interfaces/audit"
+	repositorygeneric "yourz-itinerary/internal/repositories/generic"
+	"yourz-itinerary/pkg/filter"
 
 	"gorm.io/gorm"
 )

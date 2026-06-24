@@ -2,9 +2,9 @@ package interfaceuser
 
 import (
 	"context"
-	domainuser "starter-kit/internal/domain/user"
-	"starter-kit/internal/dto"
-	"starter-kit/pkg/filter"
+	domainuser "yourz-itinerary/internal/domain/user"
+	"yourz-itinerary/internal/dto"
+	"yourz-itinerary/pkg/filter"
 )
 
 type ServiceUserInterface interface {

@@ -3,9 +3,9 @@ package repositorygeneric
 import (
 	"fmt"
 	"reflect"
-	"starter-kit/pkg/filter"
-	"starter-kit/utils"
 	"strings"
+	"yourz-itinerary/pkg/filter"
+	"yourz-itinerary/utils"
 
 	"gorm.io/gorm"
 )

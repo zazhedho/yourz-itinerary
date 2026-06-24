@@ -2,8 +2,8 @@ package interfacesession
 
 import (
 	"context"
-	domainsession "starter-kit/internal/domain/session"
 	"time"
+	domainsession "yourz-itinerary/internal/domain/session"
 )
 
 type RepoSessionInterface interface {

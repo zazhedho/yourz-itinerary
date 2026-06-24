@@ -3,9 +3,9 @@ package utils
 import (
 	"errors"
 	"net/http/httptest"
-	domainuser "starter-kit/internal/domain/user"
 	"testing"
 	"time"
+	domainuser "yourz-itinerary/internal/domain/user"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"

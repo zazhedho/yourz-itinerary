@@ -3,9 +3,9 @@ package middlewares
 import (
 	"fmt"
 	"net/http"
-	"starter-kit/internal/authscope"
-	"starter-kit/pkg/logger"
 	"time"
+	"yourz-itinerary/internal/authscope"
+	"yourz-itinerary/pkg/logger"
 
 	"github.com/gin-gonic/gin"
 )

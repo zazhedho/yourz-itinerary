@@ -2,9 +2,9 @@ package interfacerole
 
 import (
 	"context"
-	domainrole "starter-kit/internal/domain/role"
-	"starter-kit/internal/dto"
-	"starter-kit/pkg/filter"
+	domainrole "yourz-itinerary/internal/domain/role"
+	"yourz-itinerary/internal/dto"
+	"yourz-itinerary/pkg/filter"
 )
 
 type ServiceRoleInterface interface {

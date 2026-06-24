@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"slices"
-	"starter-kit/utils"
 	"strings"
+	"yourz-itinerary/utils"
 )
 
 var defaultActions = []string{"list", "view", "create", "update", "delete"}

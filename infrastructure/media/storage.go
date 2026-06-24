@@ -2,10 +2,10 @@ package media
 
 import (
 	"fmt"
-	"starter-kit/pkg/logger"
-	"starter-kit/pkg/storage"
-	"starter-kit/utils"
 	"strconv"
+	"yourz-itinerary/pkg/logger"
+	"yourz-itinerary/pkg/storage"
+	"yourz-itinerary/utils"
 )
 
 // InitStorage initializes and returns a storage provider (MinIO or R2)

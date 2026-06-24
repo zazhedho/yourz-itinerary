@@ -2,13 +2,13 @@ package servicemenu
 
 import (
 	"context"
-	domainmenu "starter-kit/internal/domain/menu"
-	"starter-kit/internal/dto"
-	interfacemenu "starter-kit/internal/interfaces/menu"
-	interfacepermission "starter-kit/internal/interfaces/permission"
-	serviceshared "starter-kit/internal/services/shared"
-	"starter-kit/pkg/filter"
 	"time"
+	domainmenu "yourz-itinerary/internal/domain/menu"
+	"yourz-itinerary/internal/dto"
+	interfacemenu "yourz-itinerary/internal/interfaces/menu"
+	interfacepermission "yourz-itinerary/internal/interfaces/permission"
+	serviceshared "yourz-itinerary/internal/services/shared"
+	"yourz-itinerary/pkg/filter"
 )
 
 type MenuService struct {

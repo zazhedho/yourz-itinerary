@@ -6,9 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"starter-kit/pkg/logger"
-	"starter-kit/utils"
 	"time"
+	"yourz-itinerary/pkg/logger"
+	"yourz-itinerary/utils"
 
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"

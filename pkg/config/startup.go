@@ -9,7 +9,7 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
-	"starter-kit/utils"
+	"yourz-itinerary/utils"
 )
 
 func ValidateStartupConfig(port string) error {

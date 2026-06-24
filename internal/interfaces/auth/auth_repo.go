@@ -2,8 +2,8 @@ package interfaceauth
 
 import (
 	"context"
-	domainauth "starter-kit/internal/domain/auth"
 	"time"
+	domainauth "yourz-itinerary/internal/domain/auth"
 )
 
 type RepoAuthInterface interface {

@@ -3,9 +3,9 @@ package utils
 import (
 	"errors"
 	"fmt"
-	domainuser "starter-kit/internal/domain/user"
 	"strings"
 	"time"
+	domainuser "yourz-itinerary/internal/domain/user"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"

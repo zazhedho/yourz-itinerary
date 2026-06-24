@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"starter-kit/pkg/filter"
 	"strings"
+	"yourz-itinerary/pkg/filter"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"

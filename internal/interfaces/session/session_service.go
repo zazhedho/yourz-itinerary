@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	domainsession "starter-kit/internal/domain/session"
-	domainuser "starter-kit/internal/domain/user"
+	domainsession "yourz-itinerary/internal/domain/session"
+	domainuser "yourz-itinerary/internal/domain/user"
 )
 
 type ServiceSessionInterface interface {

@@ -3,13 +3,13 @@ package servicepermission
 import (
 	"context"
 	"errors"
-	permissioncache "starter-kit/internal/cache/permission"
-	domainpermission "starter-kit/internal/domain/permission"
-	"starter-kit/internal/dto"
-	interfacepermission "starter-kit/internal/interfaces/permission"
-	"starter-kit/pkg/filter"
-	"starter-kit/utils"
 	"time"
+	permissioncache "yourz-itinerary/internal/cache/permission"
+	domainpermission "yourz-itinerary/internal/domain/permission"
+	"yourz-itinerary/internal/dto"
+	interfacepermission "yourz-itinerary/internal/interfaces/permission"
+	"yourz-itinerary/pkg/filter"
+	"yourz-itinerary/utils"
 )
 
 type PermissionService struct {

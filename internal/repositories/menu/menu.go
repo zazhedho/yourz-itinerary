@@ -3,11 +3,11 @@ package repositorymenu
 import (
 	"context"
 	"sort"
-	domainmenu "starter-kit/internal/domain/menu"
-	interfacemenu "starter-kit/internal/interfaces/menu"
-	repositorygeneric "starter-kit/internal/repositories/generic"
-	"starter-kit/pkg/filter"
-	"starter-kit/utils"
+	domainmenu "yourz-itinerary/internal/domain/menu"
+	interfacemenu "yourz-itinerary/internal/interfaces/menu"
+	repositorygeneric "yourz-itinerary/internal/repositories/generic"
+	"yourz-itinerary/pkg/filter"
+	"yourz-itinerary/utils"
 
 	"gorm.io/gorm"
 )

@@ -3,10 +3,10 @@ package servicepermission
 import (
 	"context"
 	"errors"
-	domainpermission "starter-kit/internal/domain/permission"
-	"starter-kit/internal/dto"
-	"starter-kit/pkg/filter"
 	"testing"
+	domainpermission "yourz-itinerary/internal/domain/permission"
+	"yourz-itinerary/internal/dto"
+	"yourz-itinerary/pkg/filter"
 )
 
 type permissionRepoTestDouble struct {
