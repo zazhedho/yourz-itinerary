@@ -1,6 +1,7 @@
 package handlerrole
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"reflect"
@@ -15,6 +16,7 @@ import (
 	"yourz-itinerary/utils"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type RoleHandler struct {
@@ -212,52 +214,24 @@ func (h *RoleHandler) AssignPermissions(ctx *gin.Context) {
 	var req dto.AssignPermissions
 	logId := utils.GenerateLogId(ctx)
 	logPrefix := "[RoleHandler][AssignPermissions]"
-	reqCtx := ctx.Request.Context()
-
-	if err := ctx.BindJSON(&req); err != nil {
-		logger.WriteLogWithContext(ctx, logger.LogLevelError, fmt.Sprintf("%s; BindJSON ERROR: %s;", logPrefix, err.Error()))
-		res := response.Response(http.StatusBadRequest, messages.InvalidRequest, logId, nil)
-		res.Error = utils.ValidateError(err, reflect.TypeOf(req), "json")
-		ctx.JSON(http.StatusBadRequest, res)
-		return
-	}
-
-	logger.WriteLogWithContext(ctx, logger.LogLevelDebug, fmt.Sprintf("%s; Request: %+v;", logPrefix, utils.JsonEncode(req)))
-
-	beforeIDs, _ := h.Service.GetRolePermissions(reqCtx, id)
-	if err := h.Service.AssignPermissions(reqCtx, id, req); err != nil {
-		h.writeAudit(ctx, domainaudit.AuditEvent{
-			Action:       domainaudit.ActionAssign,
-			Resource:     "role_permissions",
-			ResourceID:   id,
-			Status:       domainaudit.StatusFailed,
-			Message:      "Failed to assign permissions to role",
-			ErrorMessage: err.Error(),
-			BeforeData: map[string]interface{}{
-				"permission_ids": beforeIDs,
-			},
-			AfterData: req,
-		})
-		logger.WriteLogWithContext(ctx, logger.LogLevelError, fmt.Sprintf("%s; Service.AssignPermissions; Error: %+v", logPrefix, err))
-		statusCode, res := roleMutationErrorResponse(logId, err)
-		ctx.JSON(statusCode, res)
-		return
-	}
-	h.writeAudit(ctx, domainaudit.AuditEvent{
-		Action:     domainaudit.ActionAssign,
-		Resource:   "role_permissions",
-		ResourceID: id,
-		Status:     domainaudit.StatusSuccess,
-		Message:    "Assigned permissions to role",
-		BeforeData: map[string]interface{}{
-			"permission_ids": beforeIDs,
+	h.assignRoleRelation(ctx, roleRelationAssignment{
+		id:             id,
+		request:        &req,
+		requestValue:   func() interface{} { return req },
+		logID:          logId,
+		logPrefix:      logPrefix,
+		beforeKey:      "permission_ids",
+		resource:       "role_permissions",
+		failedMessage:  "Failed to assign permissions to role",
+		successMessage: "Assigned permissions to role",
+		responseText:   "Permissions assigned successfully",
+		debugText:      "Permissions assigned",
+		serviceName:    "Service.AssignPermissions",
+		before:         h.Service.GetRolePermissions,
+		assign: func(reqCtx context.Context, id string) error {
+			return h.Service.AssignPermissions(reqCtx, id, req)
 		},
-		AfterData: req,
 	})
-
-	res := response.Response(http.StatusOK, "Permissions assigned successfully", logId, nil)
-	logger.WriteLogWithContext(ctx, logger.LogLevelDebug, fmt.Sprintf("%s; Permissions assigned", logPrefix))
-	ctx.JSON(http.StatusOK, res)
 }
 
 func (h *RoleHandler) AssignMenus(ctx *gin.Context) {
@@ -265,50 +239,89 @@ func (h *RoleHandler) AssignMenus(ctx *gin.Context) {
 	var req dto.AssignMenus
 	logId := utils.GenerateLogId(ctx)
 	logPrefix := "[RoleHandler][AssignMenus]"
+	h.assignRoleRelation(ctx, roleRelationAssignment{
+		id:             id,
+		request:        &req,
+		requestValue:   func() interface{} { return req },
+		logID:          logId,
+		logPrefix:      logPrefix,
+		beforeKey:      "menu_ids",
+		resource:       "role_menus",
+		failedMessage:  "Failed to assign menus to role",
+		successMessage: "Assigned menus to role",
+		responseText:   "Menus assigned successfully",
+		debugText:      "Menus assigned",
+		serviceName:    "Service.AssignMenus",
+		before:         h.Service.GetRoleMenus,
+		assign: func(reqCtx context.Context, id string) error {
+			return h.Service.AssignMenus(reqCtx, id, req)
+		},
+	})
+}
+
+type roleRelationAssignment struct {
+	id             string
+	request        interface{}
+	requestValue   func() interface{}
+	logID          uuid.UUID
+	logPrefix      string
+	beforeKey      string
+	resource       string
+	failedMessage  string
+	successMessage string
+	responseText   string
+	debugText      string
+	serviceName    string
+	before         func(context.Context, string) ([]string, error)
+	assign         func(context.Context, string) error
+}
+
+func (h *RoleHandler) assignRoleRelation(ctx *gin.Context, assignment roleRelationAssignment) {
 	reqCtx := ctx.Request.Context()
 
-	if err := ctx.BindJSON(&req); err != nil {
-		logger.WriteLogWithContext(ctx, logger.LogLevelError, fmt.Sprintf("%s; BindJSON ERROR: %s;", logPrefix, err.Error()))
-		res := response.Response(http.StatusBadRequest, messages.InvalidRequest, logId, nil)
-		res.Error = utils.ValidateError(err, reflect.TypeOf(req), "json")
+	if err := ctx.BindJSON(assignment.request); err != nil {
+		logger.WriteLogWithContext(ctx, logger.LogLevelError, fmt.Sprintf("%s; BindJSON ERROR: %s;", assignment.logPrefix, err.Error()))
+		res := response.Response(http.StatusBadRequest, messages.InvalidRequest, assignment.logID, nil)
+		res.Error = utils.ValidateError(err, reflect.TypeOf(assignment.requestValue()), "json")
 		ctx.JSON(http.StatusBadRequest, res)
 		return
 	}
 
-	logger.WriteLogWithContext(ctx, logger.LogLevelDebug, fmt.Sprintf("%s; Request: %+v;", logPrefix, utils.JsonEncode(req)))
+	requestValue := assignment.requestValue()
+	logger.WriteLogWithContext(ctx, logger.LogLevelDebug, fmt.Sprintf("%s; Request: %+v;", assignment.logPrefix, utils.JsonEncode(requestValue)))
 
-	beforeIDs, _ := h.Service.GetRoleMenus(reqCtx, id)
-	if err := h.Service.AssignMenus(reqCtx, id, req); err != nil {
+	beforeIDs, _ := assignment.before(reqCtx, assignment.id)
+	if err := assignment.assign(reqCtx, assignment.id); err != nil {
 		h.writeAudit(ctx, domainaudit.AuditEvent{
 			Action:       domainaudit.ActionAssign,
-			Resource:     "role_menus",
-			ResourceID:   id,
+			Resource:     assignment.resource,
+			ResourceID:   assignment.id,
 			Status:       domainaudit.StatusFailed,
-			Message:      "Failed to assign menus to role",
+			Message:      assignment.failedMessage,
 			ErrorMessage: err.Error(),
 			BeforeData: map[string]interface{}{
-				"menu_ids": beforeIDs,
+				assignment.beforeKey: beforeIDs,
 			},
-			AfterData: req,
+			AfterData: requestValue,
 		})
-		logger.WriteLogWithContext(ctx, logger.LogLevelError, fmt.Sprintf("%s; Service.AssignMenus; Error: %+v", logPrefix, err))
-		statusCode, res := roleMutationErrorResponse(logId, err)
+		logger.WriteLogWithContext(ctx, logger.LogLevelError, fmt.Sprintf("%s; %s; Error: %+v", assignment.logPrefix, assignment.serviceName, err))
+		statusCode, res := roleMutationErrorResponse(assignment.logID, err)
 		ctx.JSON(statusCode, res)
 		return
 	}
 	h.writeAudit(ctx, domainaudit.AuditEvent{
 		Action:     domainaudit.ActionAssign,
-		Resource:   "role_menus",
-		ResourceID: id,
+		Resource:   assignment.resource,
+		ResourceID: assignment.id,
 		Status:     domainaudit.StatusSuccess,
-		Message:    "Assigned menus to role",
+		Message:    assignment.successMessage,
 		BeforeData: map[string]interface{}{
-			"menu_ids": beforeIDs,
+			assignment.beforeKey: beforeIDs,
 		},
-		AfterData: req,
+		AfterData: requestValue,
 	})
 
-	res := response.Response(http.StatusOK, "Menus assigned successfully", logId, nil)
-	logger.WriteLogWithContext(ctx, logger.LogLevelDebug, fmt.Sprintf("%s; Menus assigned", logPrefix))
+	res := response.Response(http.StatusOK, assignment.responseText, assignment.logID, nil)
+	logger.WriteLogWithContext(ctx, logger.LogLevelDebug, fmt.Sprintf("%s; %s", assignment.logPrefix, assignment.debugText))
 	ctx.JSON(http.StatusOK, res)
 }

@@ -4,10 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"reflect"
-
 	"yourz-itinerary/internal/authscope"
 	"yourz-itinerary/internal/dto"
+	handlercommon "yourz-itinerary/internal/handlers/http/common"
 	interfaceitineraryday "yourz-itinerary/internal/interfaces/itineraryday"
 	serviceitineraryday "yourz-itinerary/internal/services/itineraryday"
 	serviceshared "yourz-itinerary/internal/services/shared"
@@ -30,59 +29,45 @@ func NewItineraryDayHandler(s interfaceitineraryday.ServiceItineraryDayInterface
 func (h *ItineraryDayHandler) CreateDay(ctx *gin.Context) {
 	logId := utils.GenerateLogId(ctx)
 	logPrefix := "[ItineraryDayHandler][CreateDay]"
-	reqCtx := ctx.Request.Context()
-	scope := authscope.FromContext(reqCtx)
-
 	tripId, err := utils.ValidateUUID(ctx, logId)
 	if err != nil {
 		return
 	}
 
 	var req dto.CreateItineraryDayRequest
-	if err := ctx.BindJSON(&req); err != nil {
-		res := response.Response(http.StatusBadRequest, "Invalid request format", logId, nil)
-		res.Error = utils.ValidateError(err, reflect.TypeOf(req), "json")
-		ctx.JSON(http.StatusBadRequest, res)
-		return
-	}
-
-	data, err := h.Service.CreateDay(reqCtx, scope.UserID, tripId, req)
-	if err != nil {
-		h.handleServiceError(ctx, logId, logPrefix, err, "CreateDay")
-		return
-	}
-
-	res := response.Response(http.StatusCreated, "Day created successfully", logId, data)
-	ctx.JSON(http.StatusCreated, res)
+	handlercommon.HandleJSONMutation(ctx, handlercommon.JSONMutation[dto.CreateItineraryDayRequest, dto.ItineraryDayResponse]{
+		ID:          tripId,
+		Request:     &req,
+		LogID:       logId,
+		LogPrefix:   logPrefix,
+		Operation:   "CreateDay",
+		StatusCode:  http.StatusCreated,
+		Message:     "Day created successfully",
+		ServiceCall: h.Service.CreateDay,
+		HandleError: h.handleServiceError,
+	})
 }
 
 func (h *ItineraryDayHandler) UpdateDay(ctx *gin.Context) {
 	logId := utils.GenerateLogId(ctx)
 	logPrefix := "[ItineraryDayHandler][UpdateDay]"
-	reqCtx := ctx.Request.Context()
-	scope := authscope.FromContext(reqCtx)
-
 	dayId, err := utils.ValidateUUID(ctx, logId)
 	if err != nil {
 		return
 	}
 
 	var req dto.UpdateItineraryDayRequest
-	if err := ctx.BindJSON(&req); err != nil {
-		res := response.Response(http.StatusBadRequest, "Invalid request format", logId, nil)
-		res.Error = utils.ValidateError(err, reflect.TypeOf(req), "json")
-		ctx.JSON(http.StatusBadRequest, res)
-		return
-	}
-
-	data, err := h.Service.UpdateDay(reqCtx, scope.UserID, dayId, req)
-	if err != nil {
-		h.handleServiceError(ctx, logId, logPrefix, err, "UpdateDay")
-		return
-	}
-
-	res := response.Response(http.StatusOK, "Day updated successfully", logId, data)
-	ctx.JSON(http.StatusOK, res)
+	handlercommon.HandleJSONMutation(ctx, handlercommon.JSONMutation[dto.UpdateItineraryDayRequest, dto.ItineraryDayResponse]{
+		ID:          dayId,
+		Request:     &req,
+		LogID:       logId,
+		LogPrefix:   logPrefix,
+		Operation:   "UpdateDay",
+		StatusCode:  http.StatusOK,
+		Message:     "Day updated successfully",
+		ServiceCall: h.Service.UpdateDay,
+		HandleError: h.handleServiceError,
+	})
 }
 
 func (h *ItineraryDayHandler) DeleteDay(ctx *gin.Context) {

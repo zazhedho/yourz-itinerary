@@ -8,6 +8,7 @@ import (
 
 	"yourz-itinerary/internal/authscope"
 	"yourz-itinerary/internal/dto"
+	handlercommon "yourz-itinerary/internal/handlers/http/common"
 	interfaceitineraryitem "yourz-itinerary/internal/interfaces/itineraryitem"
 	serviceitineraryitem "yourz-itinerary/internal/services/itineraryitem"
 	serviceshared "yourz-itinerary/internal/services/shared"
@@ -30,59 +31,45 @@ func NewItineraryItemHandler(s interfaceitineraryitem.ServiceItineraryItemInterf
 func (h *ItineraryItemHandler) CreateItem(ctx *gin.Context) {
 	logId := utils.GenerateLogId(ctx)
 	logPrefix := "[ItineraryItemHandler][CreateItem]"
-	reqCtx := ctx.Request.Context()
-	scope := authscope.FromContext(reqCtx)
-
 	dayId, err := utils.ValidateUUID(ctx, logId)
 	if err != nil {
 		return
 	}
 
 	var req dto.CreateItineraryItemRequest
-	if err := ctx.BindJSON(&req); err != nil {
-		res := response.Response(http.StatusBadRequest, "Invalid request format", logId, nil)
-		res.Error = utils.ValidateError(err, reflect.TypeOf(req), "json")
-		ctx.JSON(http.StatusBadRequest, res)
-		return
-	}
-
-	data, err := h.Service.CreateItem(reqCtx, scope.UserID, dayId, req)
-	if err != nil {
-		h.handleServiceError(ctx, logId, logPrefix, err, "CreateItem")
-		return
-	}
-
-	res := response.Response(http.StatusCreated, "Item created successfully", logId, data)
-	ctx.JSON(http.StatusCreated, res)
+	handlercommon.HandleJSONMutation(ctx, handlercommon.JSONMutation[dto.CreateItineraryItemRequest, dto.ItineraryItemResponse]{
+		ID:          dayId,
+		Request:     &req,
+		LogID:       logId,
+		LogPrefix:   logPrefix,
+		Operation:   "CreateItem",
+		StatusCode:  http.StatusCreated,
+		Message:     "Item created successfully",
+		ServiceCall: h.Service.CreateItem,
+		HandleError: h.handleServiceError,
+	})
 }
 
 func (h *ItineraryItemHandler) UpdateItem(ctx *gin.Context) {
 	logId := utils.GenerateLogId(ctx)
 	logPrefix := "[ItineraryItemHandler][UpdateItem]"
-	reqCtx := ctx.Request.Context()
-	scope := authscope.FromContext(reqCtx)
-
 	itemId, err := utils.ValidateUUID(ctx, logId)
 	if err != nil {
 		return
 	}
 
 	var req dto.UpdateItineraryItemRequest
-	if err := ctx.BindJSON(&req); err != nil {
-		res := response.Response(http.StatusBadRequest, "Invalid request format", logId, nil)
-		res.Error = utils.ValidateError(err, reflect.TypeOf(req), "json")
-		ctx.JSON(http.StatusBadRequest, res)
-		return
-	}
-
-	data, err := h.Service.UpdateItem(reqCtx, scope.UserID, itemId, req)
-	if err != nil {
-		h.handleServiceError(ctx, logId, logPrefix, err, "UpdateItem")
-		return
-	}
-
-	res := response.Response(http.StatusOK, "Item updated successfully", logId, data)
-	ctx.JSON(http.StatusOK, res)
+	handlercommon.HandleJSONMutation(ctx, handlercommon.JSONMutation[dto.UpdateItineraryItemRequest, dto.ItineraryItemResponse]{
+		ID:          itemId,
+		Request:     &req,
+		LogID:       logId,
+		LogPrefix:   logPrefix,
+		Operation:   "UpdateItem",
+		StatusCode:  http.StatusOK,
+		Message:     "Item updated successfully",
+		ServiceCall: h.Service.UpdateItem,
+		HandleError: h.handleServiceError,
+	})
 }
 
 func (h *ItineraryItemHandler) DeleteItem(ctx *gin.Context) {
