@@ -99,6 +99,10 @@ func main() {
 	routes.AppConfigRoutes()
 	routes.AuditRoutes()
 	routes.LocationRoutes()
+	routes.TripRoutes()
+	routes.TripMemberRoutes()
+	routes.ItineraryDayRoutes()
+	routes.ItineraryItemRoutes()
 
 	// Register session routes if Redis is available
 	if redisClient != nil {

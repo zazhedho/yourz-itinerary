@@ -79,6 +79,9 @@ func TestGenericRepositoryDryRunCRUDMethods(t *testing.T) {
 	if err := repo.Update(ctx, record); err != nil {
 		t.Fatalf("update: %v", err)
 	}
+	if err := repo.SoftDelete(ctx, "record-1", "user-1"); err != nil {
+		t.Fatalf("soft delete: %v", err)
+	}
 	if err := repo.Delete(ctx, "record-1"); err != nil {
 		t.Fatalf("delete: %v", err)
 	}

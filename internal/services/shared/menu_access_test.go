@@ -60,6 +60,9 @@ func (m *permissionRepoSharedTestDouble) Update(ctx context.Context, data domain
 	return nil
 }
 func (m *permissionRepoSharedTestDouble) Delete(ctx context.Context, id string) error { return nil }
+func (m *permissionRepoSharedTestDouble) SoftDelete(ctx context.Context, id, deletedBy string) error {
+	return nil
+}
 func (m *permissionRepoSharedTestDouble) GetByName(ctx context.Context, name string) (domainpermission.Permission, error) {
 	return domainpermission.Permission{}, errors.New("not implemented")
 }
@@ -74,13 +77,13 @@ func (m *permissionRepoSharedTestDouble) GetUserPermissions(ctx context.Context,
 }
 
 func TestHasPermissionUsesScopeAndRepositoryFallback(t *testing.T) {
-	ctx := authscope.WithContext(context.Background(), authscope.New("user-1", "Jane", "staff", []string{"users:list"}))
+	ctx := authscope.WithContext(context.Background(), authscope.New("user-1", "Jane", "member", []string{"users:list"}))
 	ok, err := HasPermission(ctx, &permissionRepoSharedTestDouble{}, "users", "list")
 	if err != nil || !ok {
 		t.Fatalf("expected scope permission to allow, ok=%v err=%v", ok, err)
 	}
 
-	ctx = authscope.WithContext(context.Background(), authscope.New("user-1", "Jane", "staff", nil))
+	ctx = authscope.WithContext(context.Background(), authscope.New("user-1", "Jane", "member", nil))
 	ok, err = HasPermission(ctx, &permissionRepoSharedTestDouble{
 		permissions: []domainpermission.Permission{{Resource: "users", Action: "delete"}},
 	}, "users", "delete")

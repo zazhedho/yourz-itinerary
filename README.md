@@ -1,6 +1,6 @@
-# Starter Kit
+# Yourz Itinerary
 
-Backend starter template for Go services with:
+Backend service for shared trip itinerary management with:
 - Gin HTTP router
 - PostgreSQL via GORM
 - JWT authentication
@@ -8,7 +8,7 @@ Backend starter template for Go services with:
 - runtime application configurations from database
 - optional Redis-based session management and rate limiting
 
-This repository is intended to be the foundation for future projects. The current structure is generic on purpose and should be extended by adding new business modules on top of the existing patterns.
+Owners, editors, and viewers can collaborate on trip plans with day-by-day itinerary items, member management by registered email, and coordinate-aware activity entries.
 
 ## Core Principles
 
@@ -78,6 +78,14 @@ System modules currently included:
 - Configurations
 - Locations
 - Sessions when Redis is enabled
+
+Itinerary modules (split by feature boundary):
+- Trips (create/list/detail/update/delete)
+- Trip Members (add/update-role/remove/leave)
+- Itinerary Days (create/update/delete)
+- Itinerary Items (create/update/delete/reorder with coordinate support)
+
+Each itinerary feature owns its own domain, repository, service, handler, and route registration. Shared access helpers (role constants and guard functions) live in `internal/services/shared`.
 
 ## Project Structure
 
@@ -212,6 +220,32 @@ Additional session routes are registered only when Redis is available:
 - `GET /api/user/sessions`
 - `DELETE /api/user/session/:session_id`
 - `POST /api/user/sessions/revoke-others`
+
+### Itinerary Routes
+
+All itinerary endpoints require JWT authentication. Access is controlled by trip membership roles (owner, editor, viewer).
+
+- `POST /api/trips` — Create trip (creator becomes owner)
+- `GET /api/trips` — List trips where current user is a member
+- `GET /api/trips/:id` — Get trip detail with members, days, and items
+- `PUT /api/trips/:id` — Update trip metadata (owner or editor)
+- `DELETE /api/trips/:id` — Soft-delete trip (owner only)
+
+- `POST /api/trips/:id/members` — Add member by registered email (owner only)
+- `PUT /api/trips/:id/members/:member_id` — Change member role (owner only)
+- `DELETE /api/trips/:id/members/:member_id` — Remove member (owner only)
+- `DELETE /api/trips/:id/leave` — Leave trip (non-owner members)
+
+- `POST /api/trips/:id/days` — Create itinerary day (owner or editor)
+- `PUT /api/itinerary-days/:id` — Update day (owner or editor)
+- `DELETE /api/itinerary-days/:id` — Soft-delete day (owner or editor)
+
+- `POST /api/itinerary-days/:id/items` — Create activity item (owner or editor)
+- `PUT /api/itinerary-items/:id` — Update activity item (owner or editor)
+- `DELETE /api/itinerary-items/:id` — Soft-delete activity item (owner or editor)
+- `PUT /api/itinerary-days/:id/items/reorder` — Reorder items (owner or editor)
+
+Trip member roles: `owner`, `editor`, `viewer`.
 
 Location architecture:
 - PostgreSQL is the source of truth for provinces, cities, districts, and villages

@@ -11,16 +11,22 @@ import (
 	permissioncache "yourz-itinerary/internal/cache/permission"
 	appConfigHandler "yourz-itinerary/internal/handlers/http/appconfig"
 	auditHandler "yourz-itinerary/internal/handlers/http/audit"
+	itineraryDayHandler "yourz-itinerary/internal/handlers/http/itineraryday"
+	itineraryItemHandler "yourz-itinerary/internal/handlers/http/itineraryitem"
 	locationHandler "yourz-itinerary/internal/handlers/http/location"
 	menuHandler "yourz-itinerary/internal/handlers/http/menu"
 	permissionHandler "yourz-itinerary/internal/handlers/http/permission"
 	roleHandler "yourz-itinerary/internal/handlers/http/role"
 	sessionHandler "yourz-itinerary/internal/handlers/http/session"
+	tripHandler "yourz-itinerary/internal/handlers/http/trip"
+	tripMemberHandler "yourz-itinerary/internal/handlers/http/tripmember"
 	userHandler "yourz-itinerary/internal/handlers/http/user"
 	interfacesession "yourz-itinerary/internal/interfaces/session"
 	appConfigRepo "yourz-itinerary/internal/repositories/appconfig"
 	auditRepo "yourz-itinerary/internal/repositories/audit"
 	authRepo "yourz-itinerary/internal/repositories/auth"
+	itineraryDayRepo "yourz-itinerary/internal/repositories/itineraryday"
+	itineraryItemRepo "yourz-itinerary/internal/repositories/itineraryitem"
 	locationRepo "yourz-itinerary/internal/repositories/location"
 	menuRepo "yourz-itinerary/internal/repositories/menu"
 	otpRepo "yourz-itinerary/internal/repositories/otp"
@@ -28,9 +34,13 @@ import (
 	resetRepo "yourz-itinerary/internal/repositories/reset"
 	roleRepo "yourz-itinerary/internal/repositories/role"
 	sessionRepo "yourz-itinerary/internal/repositories/session"
+	tripRepo "yourz-itinerary/internal/repositories/trip"
+	tripMemberRepo "yourz-itinerary/internal/repositories/tripmember"
 	userRepo "yourz-itinerary/internal/repositories/user"
 	appConfigSvc "yourz-itinerary/internal/services/appconfig"
 	auditSvc "yourz-itinerary/internal/services/audit"
+	itineraryDaySvc "yourz-itinerary/internal/services/itineraryday"
+	itineraryItemSvc "yourz-itinerary/internal/services/itineraryitem"
 	locationSvc "yourz-itinerary/internal/services/location"
 	menuSvc "yourz-itinerary/internal/services/menu"
 	otpSvc "yourz-itinerary/internal/services/otp"
@@ -38,6 +48,8 @@ import (
 	resetSvc "yourz-itinerary/internal/services/reset"
 	roleSvc "yourz-itinerary/internal/services/role"
 	sessionSvc "yourz-itinerary/internal/services/session"
+	tripSvc "yourz-itinerary/internal/services/trip"
+	tripMemberSvc "yourz-itinerary/internal/services/tripmember"
 	userSvc "yourz-itinerary/internal/services/user"
 	"yourz-itinerary/middlewares"
 	"yourz-itinerary/pkg/config"
@@ -319,5 +331,87 @@ func (r *Routes) LocationRoutes() {
 	{
 		locationPriv.POST("/sync", mdw.PermissionMiddleware("locations", "sync"), h.Sync)
 		locationPriv.GET("/sync/:id", mdw.PermissionMiddleware("locations", "sync"), h.GetSyncJob)
+	}
+}
+
+func (r *Routes) newItineraryAuthMiddleware() *middlewares.Middleware {
+	blacklistRepo := authRepo.NewBlacklistRepo(r.DB)
+	pRepo := permissionRepo.NewPermissionRepo(r.DB)
+	return middlewares.NewMiddleware(blacklistRepo, pRepo)
+}
+
+func (r *Routes) TripRoutes() {
+	repo := tripRepo.NewTripRepo(r.DB)
+	memberRepo := tripMemberRepo.NewTripMemberRepo(r.DB)
+	dayRepo := itineraryDayRepo.NewItineraryDayRepo(r.DB)
+	itemRepo := itineraryItemRepo.NewItineraryItemRepo(r.DB)
+	svc := tripSvc.NewTripService(repo, memberRepo, dayRepo, itemRepo)
+	h := tripHandler.NewTripHandler(svc)
+	mdw := r.newItineraryAuthMiddleware()
+
+	trips := r.App.Group("/api/trips").Use(mdw.AuthMiddleware())
+	{
+		trips.POST("", h.CreateTrip)
+		trips.GET("", h.ListTrips)
+		trips.GET("/:id", h.GetTripDetail)
+		trips.PUT("/:id", h.UpdateTrip)
+		trips.DELETE("/:id", h.DeleteTrip)
+	}
+}
+
+func (r *Routes) TripMemberRoutes() {
+	tRepo := tripRepo.NewTripRepo(r.DB)
+	mRepo := tripMemberRepo.NewTripMemberRepo(r.DB)
+	uRepo := userRepo.NewUserRepo(r.DB)
+	svc := tripMemberSvc.NewTripMemberService(tRepo, mRepo, uRepo)
+	h := tripMemberHandler.NewTripMemberHandler(svc)
+	mdw := r.newItineraryAuthMiddleware()
+
+	trips := r.App.Group("/api/trips").Use(mdw.AuthMiddleware())
+	{
+		trips.POST("/:id/members", h.AddMember)
+		trips.PUT("/:id/members/:member_id", h.UpdateMemberRole)
+		trips.DELETE("/:id/members/:member_id", h.RemoveMember)
+		trips.DELETE("/:id/leave", h.LeaveTrip)
+	}
+}
+
+func (r *Routes) ItineraryDayRoutes() {
+	mRepo := tripMemberRepo.NewTripMemberRepo(r.DB)
+	dRepo := itineraryDayRepo.NewItineraryDayRepo(r.DB)
+	svc := itineraryDaySvc.NewItineraryDayService(mRepo, dRepo)
+	h := itineraryDayHandler.NewItineraryDayHandler(svc)
+	mdw := r.newItineraryAuthMiddleware()
+
+	trips := r.App.Group("/api/trips").Use(mdw.AuthMiddleware())
+	{
+		trips.POST("/:id/days", h.CreateDay)
+	}
+
+	dayRoutes := r.App.Group("/api/itinerary-days").Use(mdw.AuthMiddleware())
+	{
+		dayRoutes.PUT("/:id", h.UpdateDay)
+		dayRoutes.DELETE("/:id", h.DeleteDay)
+	}
+}
+
+func (r *Routes) ItineraryItemRoutes() {
+	mRepo := tripMemberRepo.NewTripMemberRepo(r.DB)
+	dRepo := itineraryDayRepo.NewItineraryDayRepo(r.DB)
+	iRepo := itineraryItemRepo.NewItineraryItemRepo(r.DB)
+	svc := itineraryItemSvc.NewItineraryItemService(mRepo, dRepo, iRepo)
+	h := itineraryItemHandler.NewItineraryItemHandler(svc)
+	mdw := r.newItineraryAuthMiddleware()
+
+	dayRoutes := r.App.Group("/api/itinerary-days").Use(mdw.AuthMiddleware())
+	{
+		dayRoutes.POST("/:id/items", h.CreateItem)
+		dayRoutes.PUT("/:id/items/reorder", h.ReorderItems)
+	}
+
+	itemRoutes := r.App.Group("/api/itinerary-items").Use(mdw.AuthMiddleware())
+	{
+		itemRoutes.PUT("/:id", h.UpdateItem)
+		itemRoutes.DELETE("/:id", h.DeleteItem)
 	}
 }

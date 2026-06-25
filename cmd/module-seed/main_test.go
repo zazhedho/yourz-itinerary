@@ -9,9 +9,9 @@ import (
 
 func TestSplitCSV(t *testing.T) {
 	tests := map[string][]string{
-		"":                         nil,
-		"admin, superadmin,,staff": {"admin", "superadmin", "staff"},
-		" list , view ":            {"list", "view"},
+		"":                          nil,
+		"admin, superadmin,,member": {"admin", "superadmin", "member"},
+		" list , view ":             {"list", "view"},
 	}
 
 	for input, want := range tests {

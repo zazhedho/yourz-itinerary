@@ -64,6 +64,10 @@ func TestRouteGroupsRegisterWithDryRunDB(t *testing.T) {
 	routes.AppConfigRoutes()
 	routes.AuditRoutes()
 	routes.LocationRoutes()
+	routes.TripRoutes()
+	routes.TripMemberRoutes()
+	routes.ItineraryDayRoutes()
+	routes.ItineraryItemRoutes()
 
 	registered := map[string]bool{}
 	for _, route := range routes.App.Routes() {
@@ -80,6 +84,8 @@ func TestRouteGroupsRegisterWithDryRunDB(t *testing.T) {
 		"GET /api/audits",
 		"GET /api/location/province",
 		"POST /api/location/sync",
+		"DELETE /api/trips/:id/leave",
+		"DELETE /api/trips/:id/members/:member_id",
 	} {
 		if !registered[want] {
 			t.Fatalf("expected route %s to be registered", want)

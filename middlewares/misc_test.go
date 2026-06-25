@@ -62,7 +62,7 @@ func TestRequestLoggerAndRecoveryMiddleware(t *testing.T) {
 
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/panic", nil)
-	req = req.WithContext(authscope.WithContext(req.Context(), authscope.New("user-1", "Jane", "viewer", nil)))
+	req = req.WithContext(authscope.WithContext(req.Context(), authscope.New("user-1", "Jane", "member", nil)))
 	router.ServeHTTP(rec, req)
 
 	if rec.Code != http.StatusInternalServerError {
@@ -83,11 +83,11 @@ func TestRoleMiddlewareAllowsAndRejectsRoles(t *testing.T) {
 	}
 
 	rec = performMiddlewareRequest(
-		testToken(t, "access", utils.RoleViewer),
+		testToken(t, "access", utils.RoleMember),
 		mdw.AuthMiddleware(),
 		mdw.RoleMiddleware(utils.RoleAdmin),
 	)
 	if rec.Code != http.StatusForbidden {
-		t.Fatalf("expected viewer role to be rejected, got %d: %s", rec.Code, rec.Body.String())
+		t.Fatalf("expected member role to be rejected, got %d: %s", rec.Code, rec.Body.String())
 	}
 }
