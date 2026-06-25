@@ -2,7 +2,6 @@ package servicetrip
 
 import (
 	"errors"
-	"strings"
 	"time"
 	"unicode"
 
@@ -11,13 +10,12 @@ import (
 	domaintrip "yourz-itinerary/internal/domain/trip"
 	domaintripmember "yourz-itinerary/internal/domain/tripmember"
 	"yourz-itinerary/internal/dto"
+	serviceshared "yourz-itinerary/internal/services/shared"
 )
 
 var (
-	ErrTripNotFound     = errors.New("trip not found")
 	ErrInvalidTimezone  = errors.New("invalid timezone")
 	ErrInvalidCurrency  = errors.New("invalid currency code; must be a 3-letter uppercase ISO 4217 code")
-	ErrInvalidDate      = errors.New("invalid date; must use YYYY-MM-DD")
 	ErrInvalidDateRange = errors.New("end_date must be on or after start_date")
 )
 
@@ -31,14 +29,6 @@ func isValidCurrencyCode(value string) bool {
 		}
 	}
 	return true
-}
-
-func parseDate(value string) (time.Time, error) {
-	parsed, err := time.Parse("2006-01-02", strings.TrimSpace(value))
-	if err != nil {
-		return time.Time{}, ErrInvalidDate
-	}
-	return parsed, nil
 }
 
 func tripToList(trip domaintrip.Trip, memberCount, dayCount int) dto.TripListResponse {
@@ -108,103 +98,15 @@ func tripToDetail(trip domaintrip.Trip, members []domaintripmember.TripMember, d
 
 	memberResponses := make([]dto.TripMemberResponse, 0, len(members))
 	for _, m := range members {
-		memberResponses = append(memberResponses, memberToResponse(m))
+		memberResponses = append(memberResponses, serviceshared.TripMemberToResponse(m))
 	}
 	tr.Members = memberResponses
 
 	dayResponses := make([]dto.ItineraryDayResponse, 0, len(days))
 	for _, d := range days {
-		dayResponses = append(dayResponses, dayToResponse(d, itemsByDay[d.Id]))
+		dayResponses = append(dayResponses, serviceshared.ItineraryDayToResponse(d, itemsByDay[d.Id]))
 	}
 	tr.Days = dayResponses
 
 	return tr
-}
-
-func memberToResponse(m domaintripmember.TripMember) dto.TripMemberResponse {
-	mr := dto.TripMemberResponse{
-		Id:        m.Id,
-		TripId:    m.TripId,
-		UserId:    m.UserId,
-		Role:      m.Role,
-		CreatedBy: m.CreatedBy,
-		UpdatedBy: m.UpdatedBy,
-		CreatedAt: m.CreatedAt.Format(time.RFC3339),
-	}
-
-	if m.UpdatedAt != nil {
-		mr.UpdatedAt = new(m.UpdatedAt.Format(time.RFC3339))
-	}
-	if m.DeletedBy != nil {
-		mr.DeletedBy = m.DeletedBy
-	}
-	if m.DeletedAt.Valid {
-		mr.DeletedAt = new(m.DeletedAt.Time.Format(time.RFC3339))
-	}
-
-	return mr
-}
-
-func dayToResponse(d domainitineraryday.ItineraryDay, items []domainitineraryitem.ItineraryItem) dto.ItineraryDayResponse {
-	dr := dto.ItineraryDayResponse{
-		Id:        d.Id,
-		TripId:    d.TripId,
-		DayNumber: d.DayNumber,
-		Title:     d.Title,
-		CreatedBy: d.CreatedBy,
-		UpdatedBy: d.UpdatedBy,
-		CreatedAt: d.CreatedAt.Format(time.RFC3339),
-	}
-
-	if d.Date != nil {
-		dr.Date = new(d.Date.Format("2006-01-02"))
-	}
-	if d.UpdatedAt != nil {
-		dr.UpdatedAt = new(d.UpdatedAt.Format(time.RFC3339))
-	}
-	if d.DeletedBy != nil {
-		dr.DeletedBy = d.DeletedBy
-	}
-	if d.DeletedAt.Valid {
-		dr.DeletedAt = new(d.DeletedAt.Time.Format(time.RFC3339))
-	}
-
-	itemResponses := make([]dto.ItineraryItemResponse, 0, len(items))
-	for _, item := range items {
-		itemResponses = append(itemResponses, itemToResponse(item))
-	}
-	dr.Items = itemResponses
-
-	return dr
-}
-
-func itemToResponse(item domainitineraryitem.ItineraryItem) dto.ItineraryItemResponse {
-	ir := dto.ItineraryItemResponse{
-		Id:           item.Id,
-		DayId:        item.DayId,
-		Title:        item.Title,
-		Description:  item.Description,
-		LocationName: item.LocationName,
-		Latitude:     item.Latitude,
-		Longitude:    item.Longitude,
-		StartTime:    item.StartTime,
-		EndTime:      item.EndTime,
-		CostEstimate: item.CostEstimate,
-		SortOrder:    item.SortOrder,
-		CreatedBy:    item.CreatedBy,
-		UpdatedBy:    item.UpdatedBy,
-		CreatedAt:    item.CreatedAt.Format(time.RFC3339),
-	}
-
-	if item.UpdatedAt != nil {
-		ir.UpdatedAt = new(item.UpdatedAt.Format(time.RFC3339))
-	}
-	if item.DeletedBy != nil {
-		ir.DeletedBy = item.DeletedBy
-	}
-	if item.DeletedAt.Valid {
-		ir.DeletedAt = new(item.DeletedAt.Time.Format(time.RFC3339))
-	}
-
-	return ir
 }

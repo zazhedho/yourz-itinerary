@@ -1,6 +1,10 @@
 package servicetrip
 
-import "testing"
+import (
+	"testing"
+
+	serviceshared "yourz-itinerary/internal/services/shared"
+)
 
 func TestNewTripService(t *testing.T) {
 	svc := NewTripService(nil, nil, nil, nil)
@@ -10,7 +14,7 @@ func TestNewTripService(t *testing.T) {
 }
 
 func TestTripErrorsDistinct(t *testing.T) {
-	errors := [...]error{ErrTripNotFound, ErrInvalidTimezone, ErrInvalidCurrency, ErrInvalidDate, ErrInvalidDateRange}
+	errors := [...]error{serviceshared.ErrTripNotFound, ErrInvalidTimezone, ErrInvalidCurrency, serviceshared.ErrInvalidDate, ErrInvalidDateRange}
 	for i, e := range errors {
 		for j, o := range errors {
 			if i != j && e == o { //nolint:errorlint
@@ -39,11 +43,11 @@ func TestIsValidCurrencyCode(t *testing.T) {
 }
 
 func TestParseDate(t *testing.T) {
-	_, err := parseDate("2026-06-25")
+	_, err := serviceshared.ParseDate("2026-06-25")
 	if err != nil {
 		t.Errorf("valid date should parse: %v", err)
 	}
-	_, err = parseDate("25-06-2026")
+	_, err = serviceshared.ParseDate("25-06-2026")
 	if err == nil {
 		t.Error("invalid date format should error")
 	}

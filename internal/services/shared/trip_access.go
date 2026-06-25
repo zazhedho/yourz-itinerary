@@ -11,6 +11,9 @@ const (
 var (
 	ErrNotMember    = errors.New("not a trip member")
 	ErrAccessDenied = errors.New("access denied")
+	ErrTripNotFound = errors.New("trip not found")
+	ErrDayNotFound  = errors.New("itinerary day not found")
+	ErrInvalidDate  = errors.New("invalid date; must use YYYY-MM-DD")
 )
 
 func CanViewTrip(role string) bool {

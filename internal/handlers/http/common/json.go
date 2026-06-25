@@ -29,10 +29,7 @@ func HandleJSONMutation[Req any, Res any](ctx *gin.Context, mutation JSONMutatio
 	reqCtx := ctx.Request.Context()
 	scope := authscope.FromContext(reqCtx)
 
-	if err := ctx.BindJSON(mutation.Request); err != nil {
-		res := response.Response(http.StatusBadRequest, "Invalid request format", mutation.LogID, nil)
-		res.Error = utils.ValidateError(err, reflect.TypeOf(*mutation.Request), "json")
-		ctx.JSON(http.StatusBadRequest, res)
+	if !BindJSON(ctx, mutation.LogID, mutation.Request) {
 		return
 	}
 
@@ -44,4 +41,14 @@ func HandleJSONMutation[Req any, Res any](ctx *gin.Context, mutation JSONMutatio
 
 	res := response.Response(mutation.StatusCode, mutation.Message, mutation.LogID, data)
 	ctx.JSON(mutation.StatusCode, res)
+}
+
+func BindJSON[Req any](ctx *gin.Context, logID uuid.UUID, req *Req) bool {
+	if err := ctx.BindJSON(req); err != nil {
+		res := response.Response(http.StatusBadRequest, "Invalid request format", logID, nil)
+		res.Error = utils.ValidateError(err, reflect.TypeOf(*req), "json")
+		ctx.JSON(http.StatusBadRequest, res)
+		return false
+	}
+	return true
 }

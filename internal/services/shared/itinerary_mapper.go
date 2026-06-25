@@ -1,20 +1,39 @@
-package serviceitineraryday
+package serviceshared
 
 import (
-	"errors"
 	"time"
+
 	domainitineraryday "yourz-itinerary/internal/domain/itineraryday"
 	domainitineraryitem "yourz-itinerary/internal/domain/itineraryitem"
+	domaintripmember "yourz-itinerary/internal/domain/tripmember"
 	"yourz-itinerary/internal/dto"
 )
 
-var (
-	ErrDayNotFound  = errors.New("itinerary day not found")
-	ErrTripNotFound = errors.New("trip not found")
-	ErrInvalidDate  = errors.New("invalid date; must use YYYY-MM-DD")
-)
+func TripMemberToResponse(m domaintripmember.TripMember) dto.TripMemberResponse {
+	mr := dto.TripMemberResponse{
+		Id:        m.Id,
+		TripId:    m.TripId,
+		UserId:    m.UserId,
+		Role:      m.Role,
+		CreatedBy: m.CreatedBy,
+		UpdatedBy: m.UpdatedBy,
+		CreatedAt: m.CreatedAt.Format(time.RFC3339),
+	}
 
-func dayToResponse(d domainitineraryday.ItineraryDay, items []domainitineraryitem.ItineraryItem) dto.ItineraryDayResponse {
+	if m.UpdatedAt != nil {
+		mr.UpdatedAt = new(m.UpdatedAt.Format(time.RFC3339))
+	}
+	if m.DeletedBy != nil {
+		mr.DeletedBy = m.DeletedBy
+	}
+	if m.DeletedAt.Valid {
+		mr.DeletedAt = new(m.DeletedAt.Time.Format(time.RFC3339))
+	}
+
+	return mr
+}
+
+func ItineraryDayToResponse(d domainitineraryday.ItineraryDay, items []domainitineraryitem.ItineraryItem) dto.ItineraryDayResponse {
 	dr := dto.ItineraryDayResponse{
 		Id:        d.Id,
 		TripId:    d.TripId,
@@ -40,14 +59,14 @@ func dayToResponse(d domainitineraryday.ItineraryDay, items []domainitineraryite
 
 	itemResponses := make([]dto.ItineraryItemResponse, 0, len(items))
 	for _, item := range items {
-		itemResponses = append(itemResponses, itemToResponse(item))
+		itemResponses = append(itemResponses, ItineraryItemToResponse(item))
 	}
 	dr.Items = itemResponses
 
 	return dr
 }
 
-func itemToResponse(item domainitineraryitem.ItineraryItem) dto.ItineraryItemResponse {
+func ItineraryItemToResponse(item domainitineraryitem.ItineraryItem) dto.ItineraryItemResponse {
 	ir := dto.ItineraryItemResponse{
 		Id:           item.Id,
 		DayId:        item.DayId,

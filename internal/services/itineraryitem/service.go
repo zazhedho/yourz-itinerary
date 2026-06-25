@@ -35,7 +35,7 @@ func NewItineraryItemService(
 func (s *ItineraryItemService) CreateItem(ctx context.Context, userId, dayId string, req dto.CreateItineraryItemRequest) (dto.ItineraryItemResponse, error) {
 	day, err := s.dayRepo.GetByID(ctx, dayId)
 	if err != nil {
-		return dto.ItineraryItemResponse{}, ErrDayNotFound
+		return dto.ItineraryItemResponse{}, serviceshared.ErrDayNotFound
 	}
 
 	if err := s.checkMemberEditAccess(ctx, day.TripId, userId); err != nil {
@@ -95,7 +95,7 @@ func (s *ItineraryItemService) CreateItem(ctx context.Context, userId, dayId str
 		return dto.ItineraryItemResponse{}, err
 	}
 
-	return itemToResponse(item), nil
+	return serviceshared.ItineraryItemToResponse(item), nil
 }
 
 func (s *ItineraryItemService) UpdateItem(ctx context.Context, userId, itemId string, req dto.UpdateItineraryItemRequest) (dto.ItineraryItemResponse, error) {
@@ -106,7 +106,7 @@ func (s *ItineraryItemService) UpdateItem(ctx context.Context, userId, itemId st
 
 	day, err := s.dayRepo.GetByID(ctx, item.DayId)
 	if err != nil {
-		return dto.ItineraryItemResponse{}, ErrDayNotFound
+		return dto.ItineraryItemResponse{}, serviceshared.ErrDayNotFound
 	}
 
 	if err := s.checkMemberEditAccess(ctx, day.TripId, userId); err != nil {
@@ -160,7 +160,7 @@ func (s *ItineraryItemService) UpdateItem(ctx context.Context, userId, itemId st
 		return dto.ItineraryItemResponse{}, err
 	}
 
-	return itemToResponse(item), nil
+	return serviceshared.ItineraryItemToResponse(item), nil
 }
 
 func (s *ItineraryItemService) DeleteItem(ctx context.Context, userId, itemId string) error {
@@ -171,7 +171,7 @@ func (s *ItineraryItemService) DeleteItem(ctx context.Context, userId, itemId st
 
 	day, err := s.dayRepo.GetByID(ctx, item.DayId)
 	if err != nil {
-		return ErrDayNotFound
+		return serviceshared.ErrDayNotFound
 	}
 
 	if err := s.checkMemberEditAccess(ctx, day.TripId, userId); err != nil {
@@ -188,7 +188,7 @@ func (s *ItineraryItemService) ReorderItems(ctx context.Context, userId, dayId s
 
 	day, err := s.dayRepo.GetByID(ctx, dayId)
 	if err != nil {
-		return ErrDayNotFound
+		return serviceshared.ErrDayNotFound
 	}
 
 	if err := s.checkMemberEditAccess(ctx, day.TripId, userId); err != nil {

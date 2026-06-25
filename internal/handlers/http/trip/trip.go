@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"reflect"
 
 	"yourz-itinerary/internal/authscope"
 	"yourz-itinerary/internal/dto"
+	handlercommon "yourz-itinerary/internal/handlers/http/common"
 	interfacetrip "yourz-itinerary/internal/interfaces/trip"
 	serviceshared "yourz-itinerary/internal/services/shared"
 	servicetrip "yourz-itinerary/internal/services/trip"
@@ -34,10 +34,7 @@ func (h *TripHandler) CreateTrip(ctx *gin.Context) {
 	scope := authscope.FromContext(reqCtx)
 
 	var req dto.CreateTripRequest
-	if err := ctx.BindJSON(&req); err != nil {
-		res := response.Response(http.StatusBadRequest, "Invalid request format", logId, nil)
-		res.Error = utils.ValidateError(err, reflect.TypeOf(req), "json")
-		ctx.JSON(http.StatusBadRequest, res)
+	if !handlercommon.BindJSON(ctx, logId, &req) {
 		return
 	}
 
@@ -102,10 +99,7 @@ func (h *TripHandler) UpdateTrip(ctx *gin.Context) {
 	}
 
 	var req dto.UpdateTripRequest
-	if err := ctx.BindJSON(&req); err != nil {
-		res := response.Response(http.StatusBadRequest, "Invalid request format", logId, nil)
-		res.Error = utils.ValidateError(err, reflect.TypeOf(req), "json")
-		ctx.JSON(http.StatusBadRequest, res)
+	if !handlercommon.BindJSON(ctx, logId, &req) {
 		return
 	}
 
@@ -142,14 +136,12 @@ func (h *TripHandler) DeleteTrip(ctx *gin.Context) {
 func (h *TripHandler) handleServiceError(ctx *gin.Context, logId uuid.UUID, logPrefix string, err error, method string) {
 	logger.WriteLogWithContext(ctx, logger.LogLevelError, fmt.Sprintf("%s; Service.%s; Error: %+v", logPrefix, method, err))
 
+	if handlercommon.HandleTripAccessError(ctx, logId, err) {
+		return
+	}
+
 	switch {
-	case errors.Is(err, serviceshared.ErrNotMember):
-		res := response.Forbidden(logId, "You are not a member of this trip")
-		ctx.JSON(http.StatusForbidden, res)
-	case errors.Is(err, serviceshared.ErrAccessDenied):
-		res := response.Forbidden(logId, "You do not have permission to perform this action")
-		ctx.JSON(http.StatusForbidden, res)
-	case errors.Is(err, servicetrip.ErrTripNotFound):
+	case errors.Is(err, serviceshared.ErrTripNotFound):
 		res := response.Response(http.StatusNotFound, "Trip not found", logId, nil)
 		ctx.JSON(http.StatusNotFound, res)
 	case errors.Is(err, servicetrip.ErrInvalidTimezone):
@@ -158,7 +150,7 @@ func (h *TripHandler) handleServiceError(ctx *gin.Context, logId uuid.UUID, logP
 	case errors.Is(err, servicetrip.ErrInvalidCurrency):
 		res := response.Response(http.StatusBadRequest, "Invalid currency code. Must be a 3-letter uppercase ISO 4217 code.", logId, nil)
 		ctx.JSON(http.StatusBadRequest, res)
-	case errors.Is(err, servicetrip.ErrInvalidDate):
+	case errors.Is(err, serviceshared.ErrInvalidDate):
 		res := response.Response(http.StatusBadRequest, "Invalid date. Must use YYYY-MM-DD.", logId, nil)
 		ctx.JSON(http.StatusBadRequest, res)
 	case errors.Is(err, servicetrip.ErrInvalidDateRange):

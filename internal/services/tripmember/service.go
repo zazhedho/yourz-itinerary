@@ -35,7 +35,7 @@ func NewTripMemberService(
 func (s *TripMemberService) AddMember(ctx context.Context, userId, tripId string, req dto.AddTripMemberRequest) (dto.TripMemberResponse, error) {
 	trip, err := s.tripRepo.GetByID(ctx, tripId)
 	if err != nil {
-		return dto.TripMemberResponse{}, ErrTripNotFound
+		return dto.TripMemberResponse{}, serviceshared.ErrTripNotFound
 	}
 
 	if trip.OwnerId != userId {
@@ -73,13 +73,13 @@ func (s *TripMemberService) AddMember(ctx context.Context, userId, tripId string
 		return dto.TripMemberResponse{}, err
 	}
 
-	return memberToResponse(member), nil
+	return serviceshared.TripMemberToResponse(member), nil
 }
 
 func (s *TripMemberService) UpdateMemberRole(ctx context.Context, userId, tripId, memberId string, req dto.UpdateTripMemberRoleRequest) (dto.TripMemberResponse, error) {
 	trip, err := s.tripRepo.GetByID(ctx, tripId)
 	if err != nil {
-		return dto.TripMemberResponse{}, ErrTripNotFound
+		return dto.TripMemberResponse{}, serviceshared.ErrTripNotFound
 	}
 
 	if trip.OwnerId != userId {
@@ -112,13 +112,13 @@ func (s *TripMemberService) UpdateMemberRole(ctx context.Context, userId, tripId
 		return dto.TripMemberResponse{}, err
 	}
 
-	return memberToResponse(member), nil
+	return serviceshared.TripMemberToResponse(member), nil
 }
 
 func (s *TripMemberService) RemoveMember(ctx context.Context, userId, tripId, memberId string) error {
 	trip, err := s.tripRepo.GetByID(ctx, tripId)
 	if err != nil {
-		return ErrTripNotFound
+		return serviceshared.ErrTripNotFound
 	}
 
 	if trip.OwnerId != userId {
@@ -144,7 +144,7 @@ func (s *TripMemberService) RemoveMember(ctx context.Context, userId, tripId, me
 func (s *TripMemberService) LeaveTrip(ctx context.Context, userId, tripId string) error {
 	trip, err := s.tripRepo.GetByID(ctx, tripId)
 	if err != nil {
-		return ErrTripNotFound
+		return serviceshared.ErrTripNotFound
 	}
 
 	if trip.OwnerId == userId {

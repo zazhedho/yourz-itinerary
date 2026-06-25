@@ -8,7 +8,6 @@ import (
 	"yourz-itinerary/internal/dto"
 	handlercommon "yourz-itinerary/internal/handlers/http/common"
 	interfaceitineraryday "yourz-itinerary/internal/interfaces/itineraryday"
-	serviceitineraryday "yourz-itinerary/internal/services/itineraryday"
 	serviceshared "yourz-itinerary/internal/services/shared"
 	"yourz-itinerary/pkg/logger"
 	"yourz-itinerary/pkg/response"
@@ -93,19 +92,20 @@ func (h *ItineraryDayHandler) DeleteDay(ctx *gin.Context) {
 func (h *ItineraryDayHandler) handleServiceError(ctx *gin.Context, logId uuid.UUID, logPrefix string, err error, method string) {
 	logger.WriteLogWithContext(ctx, logger.LogLevelError, fmt.Sprintf("%s; Service.%s; Error: %+v", logPrefix, method, err))
 
+	if handlercommon.HandleTripAccessError(ctx, logId, err) {
+		return
+	}
+
 	switch {
-	case errors.Is(err, serviceshared.ErrNotMember):
-		res := response.Forbidden(logId, "You are not a member of this trip")
-		ctx.JSON(http.StatusForbidden, res)
-	case errors.Is(err, serviceshared.ErrAccessDenied):
-		res := response.Forbidden(logId, "You do not have permission to perform this action")
-		ctx.JSON(http.StatusForbidden, res)
-	case errors.Is(err, serviceitineraryday.ErrDayNotFound):
+	case errors.Is(err, serviceshared.ErrDayNotFound):
 		res := response.Response(http.StatusNotFound, "Day not found", logId, nil)
 		ctx.JSON(http.StatusNotFound, res)
-	case errors.Is(err, serviceitineraryday.ErrTripNotFound):
+	case errors.Is(err, serviceshared.ErrTripNotFound):
 		res := response.Response(http.StatusNotFound, "Trip not found", logId, nil)
 		ctx.JSON(http.StatusNotFound, res)
+	case errors.Is(err, serviceshared.ErrInvalidDate):
+		res := response.Response(http.StatusBadRequest, "Invalid date. Must use YYYY-MM-DD.", logId, nil)
+		ctx.JSON(http.StatusBadRequest, res)
 	default:
 		res := response.InternalServerError(logId)
 		ctx.JSON(http.StatusInternalServerError, res)

@@ -71,14 +71,14 @@ func (s *TripService) CreateTrip(ctx context.Context, userId string, req dto.Cre
 		trip.Destination = new(strings.TrimSpace(req.Destination))
 	}
 	if req.StartDate != "" {
-		t, err := parseDate(req.StartDate)
+		t, err := serviceshared.ParseDate(req.StartDate)
 		if err != nil {
 			return dto.TripDetailResponse{}, err
 		}
 		trip.StartDate = &t
 	}
 	if req.EndDate != "" {
-		t, err := parseDate(req.EndDate)
+		t, err := serviceshared.ParseDate(req.EndDate)
 		if err != nil {
 			return dto.TripDetailResponse{}, err
 		}
@@ -115,7 +115,7 @@ func (s *TripService) GetTripDetail(ctx context.Context, userId, tripId string) 
 
 	trip, err := s.tripRepo.GetByID(ctx, tripId)
 	if err != nil {
-		return dto.TripDetailResponse{}, ErrTripNotFound
+		return dto.TripDetailResponse{}, serviceshared.ErrTripNotFound
 	}
 
 	members, days, itemsByDay, err := s.loadTripRelations(ctx, tripId)
@@ -147,7 +147,7 @@ func (s *TripService) ListTrips(ctx context.Context, userId string) ([]dto.TripL
 func (s *TripService) UpdateTrip(ctx context.Context, userId, tripId string, req dto.UpdateTripRequest) (dto.TripDetailResponse, error) {
 	trip, err := s.tripRepo.GetByID(ctx, tripId)
 	if err != nil {
-		return dto.TripDetailResponse{}, ErrTripNotFound
+		return dto.TripDetailResponse{}, serviceshared.ErrTripNotFound
 	}
 
 	member, err := s.memberRepo.GetActiveByTripAndUser(ctx, tripId, userId)
@@ -182,14 +182,14 @@ func (s *TripService) UpdateTrip(ctx context.Context, userId, tripId string, req
 		trip.CurrencyCode = cc
 	}
 	if req.StartDate != "" {
-		t, err := parseDate(req.StartDate)
+		t, err := serviceshared.ParseDate(req.StartDate)
 		if err != nil {
 			return dto.TripDetailResponse{}, err
 		}
 		trip.StartDate = &t
 	}
 	if req.EndDate != "" {
-		t, err := parseDate(req.EndDate)
+		t, err := serviceshared.ParseDate(req.EndDate)
 		if err != nil {
 			return dto.TripDetailResponse{}, err
 		}
@@ -218,7 +218,7 @@ func (s *TripService) UpdateTrip(ctx context.Context, userId, tripId string, req
 func (s *TripService) DeleteTrip(ctx context.Context, userId, tripId string) error {
 	trip, err := s.tripRepo.GetByID(ctx, tripId)
 	if err != nil {
-		return ErrTripNotFound
+		return serviceshared.ErrTripNotFound
 	}
 
 	if trip.OwnerId != userId {

@@ -45,7 +45,7 @@ func (s *ItineraryDayService) CreateDay(ctx context.Context, userId, tripId stri
 		day.Title = new(strings.TrimSpace(req.Title))
 	}
 	if req.Date != "" {
-		parsed, err := parseDate(req.Date)
+		parsed, err := serviceshared.ParseDate(req.Date)
 		if err != nil {
 			return dto.ItineraryDayResponse{}, err
 		}
@@ -56,13 +56,13 @@ func (s *ItineraryDayService) CreateDay(ctx context.Context, userId, tripId stri
 		return dto.ItineraryDayResponse{}, err
 	}
 
-	return dayToResponse(day, nil), nil
+	return serviceshared.ItineraryDayToResponse(day, nil), nil
 }
 
 func (s *ItineraryDayService) UpdateDay(ctx context.Context, userId, dayId string, req dto.UpdateItineraryDayRequest) (dto.ItineraryDayResponse, error) {
 	day, err := s.dayRepo.GetByID(ctx, dayId)
 	if err != nil {
-		return dto.ItineraryDayResponse{}, ErrDayNotFound
+		return dto.ItineraryDayResponse{}, serviceshared.ErrDayNotFound
 	}
 
 	member, err := s.memberRepo.GetActiveByTripAndUser(ctx, day.TripId, userId)
@@ -80,7 +80,7 @@ func (s *ItineraryDayService) UpdateDay(ctx context.Context, userId, dayId strin
 		day.DayNumber = req.DayNumber
 	}
 	if req.Date != "" {
-		parsed, err := parseDate(req.Date)
+		parsed, err := serviceshared.ParseDate(req.Date)
 		if err != nil {
 			return dto.ItineraryDayResponse{}, err
 		}
@@ -94,13 +94,13 @@ func (s *ItineraryDayService) UpdateDay(ctx context.Context, userId, dayId strin
 		return dto.ItineraryDayResponse{}, err
 	}
 
-	return dayToResponse(day, nil), nil
+	return serviceshared.ItineraryDayToResponse(day, nil), nil
 }
 
 func (s *ItineraryDayService) DeleteDay(ctx context.Context, userId, dayId string) error {
 	day, err := s.dayRepo.GetByID(ctx, dayId)
 	if err != nil {
-		return ErrDayNotFound
+		return serviceshared.ErrDayNotFound
 	}
 
 	member, err := s.memberRepo.GetActiveByTripAndUser(ctx, day.TripId, userId)
@@ -112,12 +112,4 @@ func (s *ItineraryDayService) DeleteDay(ctx context.Context, userId, dayId strin
 	}
 
 	return s.dayRepo.SoftDelete(ctx, day.Id, userId)
-}
-
-func parseDate(value string) (time.Time, error) {
-	parsed, err := time.Parse("2006-01-02", strings.TrimSpace(value))
-	if err != nil {
-		return time.Time{}, ErrInvalidDate
-	}
-	return parsed, nil
 }

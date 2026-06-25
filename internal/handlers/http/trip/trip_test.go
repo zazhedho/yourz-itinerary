@@ -10,7 +10,7 @@ import (
 
 	"yourz-itinerary/internal/authscope"
 	"yourz-itinerary/internal/dto"
-	servicetrip "yourz-itinerary/internal/services/trip"
+	serviceshared "yourz-itinerary/internal/services/shared"
 	"yourz-itinerary/utils"
 
 	"github.com/gin-gonic/gin"
@@ -88,7 +88,7 @@ func TestTripHandlerCreateTripSuccess(t *testing.T) {
 
 func TestTripHandlerGetTripDetailNotFound(t *testing.T) {
 	handler := NewTripHandler(&tripServiceMock{
-		err: servicetrip.ErrTripNotFound,
+		err: serviceshared.ErrTripNotFound,
 	})
 	rec := performTripRequest(http.MethodGet, "/api/trips/:id", "/api/trips/550e8400-e29b-41d4-a716-446655440000",
 		nil, handler.GetTripDetail,

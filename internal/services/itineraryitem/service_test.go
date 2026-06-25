@@ -1,6 +1,10 @@
 package serviceitineraryitem
 
-import "testing"
+import (
+	"testing"
+
+	serviceshared "yourz-itinerary/internal/services/shared"
+)
 
 func TestNewItineraryItemService(t *testing.T) {
 	svc := NewItineraryItemService(nil, nil, nil)
@@ -11,7 +15,7 @@ func TestNewItineraryItemService(t *testing.T) {
 
 func TestItemErrorsDistinct(t *testing.T) {
 	errors := [...]error{
-		ErrItemNotFound, ErrDayNotFound, ErrTripNotFound, ErrInvalidTime,
+		ErrItemNotFound, serviceshared.ErrDayNotFound, serviceshared.ErrTripNotFound, ErrInvalidTime,
 		ErrInvalidCoordinates, ErrInvalidLatitude, ErrInvalidLongitude,
 		ErrReorderDifferentDay, ErrReorderEmpty, ErrReorderItemsNotFound,
 	}

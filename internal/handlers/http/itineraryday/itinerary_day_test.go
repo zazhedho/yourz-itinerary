@@ -10,7 +10,6 @@ import (
 
 	"yourz-itinerary/internal/authscope"
 	"yourz-itinerary/internal/dto"
-	serviceitineraryday "yourz-itinerary/internal/services/itineraryday"
 	serviceshared "yourz-itinerary/internal/services/shared"
 	"yourz-itinerary/utils"
 
@@ -82,7 +81,7 @@ func TestItineraryDayCreateDaySuccess(t *testing.T) {
 
 func TestItineraryDayDayNotFound(t *testing.T) {
 	handler := NewItineraryDayHandler(&itineraryDayServiceMock{
-		err: serviceitineraryday.ErrDayNotFound,
+		err: serviceshared.ErrDayNotFound,
 	})
 	rec := performItineraryDayRequest(http.MethodPut, "/api/days/:id", "/api/days/550e8400-e29b-41d4-a716-446655440000",
 		dto.UpdateItineraryDayRequest{DayNumber: 2},
