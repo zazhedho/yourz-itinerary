@@ -265,6 +265,16 @@ label {
   font-weight: 600;
 }
 
+.field-note {
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.field-note.error {
+  color: #c13515;
+}
+
 input,
 select,
 textarea {
@@ -959,6 +969,20 @@ textarea:focus {
   margin: 0 !important;
 }
 
+a.item-location {
+  text-decoration: underline;
+  text-decoration-color: rgba(100, 116, 139, 0.4);
+  text-underline-offset: 3px;
+  transition: all 0.2s ease;
+}
+
+a.item-location:hover,
+a.item-location:active {
+  color: var(--color-primary);
+  text-decoration-color: var(--color-primary);
+  opacity: 0.8;
+}
+
 .item-cost {
   display: inline-flex;
   align-items: center;
@@ -1047,9 +1071,36 @@ textarea:focus {
   height: 100%;
 }
 
+.map-placeholder {
+  min-height: 220px;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-md);
+  color: var(--color-muted);
+  background: #ffffff;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+}
+
 .map-field {
   display: grid;
   gap: 10px;
+}
+
+.pac-container {
+  z-index: 10000;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-hairline);
+  box-shadow: var(--shadow-card);
+}
+
+.google-place-autocomplete-host,
+.google-place-autocomplete {
+  display: block;
+  width: 100%;
 }
 
 .map-field-header {

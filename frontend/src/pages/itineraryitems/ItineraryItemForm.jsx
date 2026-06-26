@@ -1,14 +1,19 @@
+import { useLoadScript } from '@react-google-maps/api'
 import { MapPin } from 'lucide-react'
 import { lazy, Suspense, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import ErrorBanner from '../../components/common/ErrorBanner'
 import Loading from '../../components/common/Loading'
+import GooglePlaceAutocomplete from '../../components/maps/GooglePlaceAutocomplete'
 import { getErrorMessage } from '../../services/api'
 import itineraryItemService from '../../services/itineraryItemService'
+import { placeToItineraryLocation } from '../../utils/googlePlaces'
 import { buildItineraryItemPayload, normalizeClockTime } from '../../utils/payloads'
 
 const CoordinatePicker = lazy(() => import('../../components/maps/CoordinatePicker'))
+
+const libraries = ['places']
 
 const ItineraryItemForm = () => {
   const { dayId, itemId } = useParams()
@@ -30,6 +35,20 @@ const ItineraryItemForm = () => {
 
   const handleChange = (event) => {
     setForm((current) => ({ ...current, [event.target.name]: event.target.value }))
+  }
+
+  const { isLoaded, loadError } = useLoadScript({
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+    libraries,
+  })
+
+  const handlePlaceSelect = (place) => {
+    setForm((current) => ({
+      ...current,
+      location_name: place.displayName || place.formattedAddress || '',
+      latitude: place.location ? String(place.location.lat()) : current.latitude,
+      longitude: place.location ? String(place.location.lng()) : current.longitude,
+    }))
   }
 
   const handleCoordinatePick = ({ latitude, longitude }) => {
@@ -72,7 +91,16 @@ const ItineraryItemForm = () => {
         </label>
         <label>
           Lokasi
-          <input name="location_name" value={form.location_name} onChange={handleChange} />
+          {loadError ? <span className="field-note error">Google Maps gagal dimuat. Cek API key, billing, dan Places API.</span> : null}
+          <GooglePlaceAutocomplete
+            isLoaded={isLoaded}
+            name="location_name"
+            placeholder={loadError ? 'Isi lokasi manual' : 'Ketik nama tempat...'}
+            value={form.location_name}
+            onChange={handleChange}
+            onPlaceSelect={handlePlaceSelect}
+            disabled={!isLoaded && !loadError}
+          />
         </label>
         <div className="form-grid">
           <label>
@@ -93,7 +121,13 @@ const ItineraryItemForm = () => {
             <small>Tap map untuk isi koordinat</small>
           </div>
           <Suspense fallback={<Loading label="Memuat map..." />}>
-            <CoordinatePicker latitude={form.latitude} longitude={form.longitude} onPick={handleCoordinatePick} />
+            {isLoaded ? (
+              <CoordinatePicker latitude={form.latitude} longitude={form.longitude} onPick={handleCoordinatePick} />
+            ) : loadError ? (
+              <div className="map-placeholder">Peta belum tersedia. Latitude dan longitude masih bisa diisi manual.</div>
+            ) : (
+              <div className="map-placeholder">Menunggu peta siap...</div>
+            )}
           </Suspense>
         </div>
         <div className="form-grid">

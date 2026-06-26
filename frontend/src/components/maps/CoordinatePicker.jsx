@@ -1,33 +1,82 @@
-import { CircleMarker, MapContainer, TileLayer, useMapEvents } from 'react-leaflet'
+import { GoogleMap } from '@react-google-maps/api'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
-const defaultCenter = [-6.2, 106.816666]
-
-const ClickLayer = ({ onPick }) => {
-  useMapEvents({
-    click(event) {
-      onPick({
-        latitude: Number(event.latlng.lat.toFixed(7)),
-        longitude: Number(event.latlng.lng.toFixed(7)),
-      })
-    },
-  })
-
-  return null
-}
+const defaultCenter = { lat: -6.2, lng: 106.816666 }
+const mapContainerStyle = { width: '100%', height: '100%' }
+const mapId = import.meta.env.VITE_GOOGLE_MAPS_MAP_ID || 'DEMO_MAP_ID'
 
 const CoordinatePicker = ({ latitude, longitude, onPick }) => {
-  const hasPosition = latitude !== '' && longitude !== '' && latitude !== null && longitude !== null
-  const position = hasPosition ? [Number(latitude), Number(longitude)] : defaultCenter
+  const markerRef = useRef(null)
+  const [map, setMap] = useState(null)
+  const lat = Number(latitude)
+  const lng = Number(longitude)
+  const hasPosition =
+    latitude !== '' && longitude !== '' && latitude !== null && longitude !== null && Number.isFinite(lat) && Number.isFinite(lng)
+  const position = useMemo(() => (hasPosition ? { lat, lng } : defaultCenter), [hasPosition, lat, lng])
+
+  useEffect(() => {
+    if (!map) return undefined
+
+    let active = true
+
+    const syncMarker = async () => {
+      if (!hasPosition) {
+        if (markerRef.current) markerRef.current.map = null
+        markerRef.current = null
+        return
+      }
+
+      const { AdvancedMarkerElement } = await window.google.maps.importLibrary('marker')
+      if (!active) return
+
+      if (!markerRef.current) {
+        markerRef.current = new AdvancedMarkerElement({
+          map,
+          position,
+        })
+        return
+      }
+
+      markerRef.current.position = position
+      markerRef.current.map = map
+    }
+
+    syncMarker()
+
+    return () => {
+      active = false
+    }
+  }, [hasPosition, map, position])
+
+  const handleUnmount = () => {
+    if (markerRef.current) markerRef.current.map = null
+    markerRef.current = null
+    setMap(null)
+  }
 
   return (
     <div className="map-panel compact">
-      <MapContainer center={position} className="map-canvas" zoom={hasPosition ? 15 : 12}>
-        <TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-        <ClickLayer onPick={onPick} />
-        {hasPosition && (
-          <CircleMarker center={position} fillColor="#ff385c" fillOpacity={0.92} pathOptions={{ color: '#ffffff' }} radius={10} />
-        )}
-      </MapContainer>
+      <div className="map-canvas" style={{ position: 'relative', width: '100%', height: '100%', minHeight: '220px' }}>
+        <GoogleMap
+          mapContainerStyle={mapContainerStyle}
+          center={position}
+          zoom={hasPosition ? 15 : 12}
+          onLoad={setMap}
+          onUnmount={handleUnmount}
+          onClick={(e) => {
+            onPick({
+              latitude: Number(e.latLng.lat().toFixed(7)),
+              longitude: Number(e.latLng.lng().toFixed(7)),
+            })
+          }}
+          options={{
+            disableDefaultUI: true,
+            zoomControl: true,
+            clickableIcons: false,
+            mapId,
+          }}
+        />
+      </div>
     </div>
   )
 }

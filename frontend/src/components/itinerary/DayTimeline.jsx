@@ -95,10 +95,20 @@ const DayTimeline = ({ days = [], currency = 'IDR', onDeleteDay, onDeleteItem })
                         </div>
                         <div className="item-meta">
                           {item.location_name && (
-                            <p className="item-location">
+                            <a
+                              href={`https://www.google.com/maps/search/?api=1&query=${
+                                item.latitude && item.longitude 
+                                  ? `${item.latitude},${item.longitude}` 
+                                  : encodeURIComponent(item.location_name)
+                              }`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="item-location"
+                              title="Buka di Google Maps"
+                            >
                               <MapPin size={12} />
                               {item.location_name}
-                            </p>
+                            </a>
                           )}
                           <span className="item-cost">
                             {formatMoney(item.cost_estimate, currency)}
