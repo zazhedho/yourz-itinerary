@@ -5,6 +5,7 @@ import AppShell from './components/common/AppShell'
 import GuestRoute from './components/common/GuestRoute'
 import Loading from './components/common/Loading'
 import ProtectedRoute from './components/common/ProtectedRoute'
+import ScrollToTop from './components/common/ScrollToTop'
 
 const ChangePassword = lazy(() => import('./pages/account/ChangePassword'))
 const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword'))
@@ -24,6 +25,7 @@ const TripMemberRoleForm = lazy(() => import('./pages/tripmembers/TripMemberRole
 
 const App = () => (
   <Suspense fallback={<Loading />}>
+    <ScrollToTop />
     <Routes>
       <Route element={<GuestRoute />}>
         <Route path="/login" element={<Login />} />

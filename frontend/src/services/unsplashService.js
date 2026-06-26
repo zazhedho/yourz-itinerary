@@ -27,7 +27,7 @@ export const getDestinationPhoto = async (destination, index = 0) => {
       if (Array.isArray(urls) && urls.length > 0) {
         return urls[index % urls.length]
       }
-    } catch (e) {
+    } catch {
       // old cache or invalid JSON, will refetch
     }
   }
