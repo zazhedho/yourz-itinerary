@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import authService from '../services/authService'
 import { getErrorMessage, getResponseData } from '../services/api'
@@ -20,25 +20,41 @@ export const AuthProvider = ({ children }) => {
       .finally(() => setBooting(false))
   }, [])
 
-  const login = async (payload) => {
+  const applyAuthResponse = useCallback(async (response) => {
+    const data = getResponseData(response) || {}
+    const token = data.access_token || data.token
+    const refreshToken = data.refresh_token
+    if (token) localStorage.setItem('token', token)
+    if (refreshToken) localStorage.setItem('refresh_token', refreshToken)
+    const profile = await authService.me()
+    setUser(getResponseData(profile))
+  }, [])
+
+  const login = useCallback(async (payload) => {
     setError('')
     try {
       const response = await authService.login(payload)
-      const data = getResponseData(response) || {}
-      const token = data.access_token || data.token
-      const refreshToken = data.refresh_token
-      if (token) localStorage.setItem('token', token)
-      if (refreshToken) localStorage.setItem('refresh_token', refreshToken)
-      const profile = await authService.me()
-      setUser(getResponseData(profile))
+      await applyAuthResponse(response)
       return true
     } catch (err) {
       setError(getErrorMessage(err, 'Login failed'))
       return false
     }
-  }
+  }, [applyAuthResponse])
 
-  const logout = async () => {
+  const googleLogin = useCallback(async (idToken) => {
+    setError('')
+    try {
+      const response = await authService.googleLogin({ id_token: idToken })
+      await applyAuthResponse(response)
+      return true
+    } catch (err) {
+      setError(getErrorMessage(err, 'Google login failed'))
+      return false
+    }
+  }, [applyAuthResponse])
+
+  const logout = useCallback(async () => {
     try {
       await authService.logout()
     } finally {
@@ -46,7 +62,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('refresh_token')
       setUser(null)
     }
-  }
+  }, [])
 
   const value = useMemo(
     () => ({
@@ -54,10 +70,11 @@ export const AuthProvider = ({ children }) => {
       booting,
       error,
       isAuthenticated: Boolean(user),
+      googleLogin,
       login,
       logout,
     }),
-    [user, booting, error],
+    [user, booting, error, googleLogin, login, logout],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

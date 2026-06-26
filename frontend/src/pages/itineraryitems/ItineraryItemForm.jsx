@@ -10,6 +10,7 @@ import { getErrorMessage } from '../../services/api'
 import itineraryItemService from '../../services/itineraryItemService'
 import { placeToItineraryLocation } from '../../utils/googlePlaces'
 import { buildItineraryItemPayload, normalizeClockTime } from '../../utils/payloads'
+import { getGoogleMapsApiKey } from '../../utils/runtimeConfig'
 
 const CoordinatePicker = lazy(() => import('../../components/maps/CoordinatePicker'))
 
@@ -38,16 +39,14 @@ const ItineraryItemForm = () => {
   }
 
   const { isLoaded, loadError } = useLoadScript({
-    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+    googleMapsApiKey: getGoogleMapsApiKey(),
     libraries,
   })
 
   const handlePlaceSelect = (place) => {
     setForm((current) => ({
       ...current,
-      location_name: place.displayName || place.formattedAddress || '',
-      latitude: place.location ? String(place.location.lat()) : current.latitude,
-      longitude: place.location ? String(place.location.lng()) : current.longitude,
+      ...placeToItineraryLocation(place),
     }))
   }
 

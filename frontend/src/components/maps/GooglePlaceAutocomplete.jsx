@@ -1,78 +1,61 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
-const GooglePlaceAutocomplete = ({ isLoaded, name, placeholder, disabled, value, onChange, onPlaceSelect }) => {
-  const inputRef = useRef(null)
-  const autocompleteRef = useRef(null)
+const GooglePlaceAutocomplete = ({ disabled, isLoaded, name, onChange, onPlaceSelect, placeholder, value }) => {
+  const containerRef = useRef(null)
   const onPlaceSelectRef = useRef(onPlaceSelect)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     onPlaceSelectRef.current = onPlaceSelect
   }, [onPlaceSelect])
 
   useEffect(() => {
-    if (!isLoaded || !inputRef.current) return
+    if (!isLoaded || !containerRef.current) return undefined
 
-    const { Autocomplete } = window.google.maps.places
-    if (!Autocomplete) return
+    let active = true
+    let autocompleteElement = null
 
-    autocompleteRef.current = new Autocomplete(inputRef.current, {
-      fields: ['name', 'formatted_address', 'geometry', 'address_components'],
-    })
+    const initAutocomplete = async () => {
+      try {
+        const { PlaceAutocompleteElement } = await window.google.maps.importLibrary('places')
+        if (!active || !containerRef.current) return
 
-    const listener = autocompleteRef.current.addListener('place_changed', () => {
-      const place = autocompleteRef.current.getPlace()
-      if (!place || !place.geometry) return
+        autocompleteElement = new PlaceAutocompleteElement()
+        autocompleteElement.placeholder = 'Cari tempat di Google Maps'
+        autocompleteElement.className = 'google-place-autocomplete'
+        autocompleteElement.addEventListener('gmp-select', async ({ placePrediction }) => {
+          const place = placePrediction.toPlace()
+          await place.fetchFields({ fields: ['displayName', 'formattedAddress', 'location'] })
+          onPlaceSelectRef.current(place)
+        })
 
-      // Extract City/Regency name for a concise format (e.g. "Braga, Bandung")
-      const cityComponent = place.address_components?.find((c) =>
-        c.types.includes('locality') || c.types.includes('administrative_area_level_2')
-      )
-      const city = cityComponent ? cityComponent.short_name : ''
-      
-      let displayName = place.name || ''
-      if (city && !displayName.toLowerCase().includes(city.toLowerCase())) {
-        displayName = `${displayName}, ${city}`
+        containerRef.current.replaceChildren(autocompleteElement)
+      } catch {
+        if (active) setError('Pencarian lokasi gagal dimuat.')
       }
-      
-      // Fallback if somehow name is missing
-      if (!displayName) displayName = place.formatted_address || ''
+    }
 
-      onPlaceSelectRef.current({
-        displayName,
-        formattedAddress: place.formatted_address,
-        location: {
-          lat: () => place.geometry.location.lat(),
-          lng: () => place.geometry.location.lng(),
-        },
-      })
-    })
+    initAutocomplete()
 
     return () => {
-      if (window.google.maps.event) {
-        window.google.maps.event.removeListener(listener)
-      }
+      active = false
+      autocompleteElement?.remove()
     }
   }, [isLoaded])
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-    }
-  }
-
   return (
-    <input
-      ref={inputRef}
-      name={name}
-      type="text"
-      placeholder={placeholder}
-      value={value}
-      onChange={onChange}
-      onKeyDown={handleKeyDown}
-      disabled={disabled}
-      className="google-place-autocomplete-input"
-      style={{ width: '100%' }}
-    />
+    <>
+      {isLoaded ? <div ref={containerRef} className="google-place-autocomplete-host" /> : null}
+      <input
+        name={name}
+        type="text"
+        placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+      />
+      {error ? <span className="field-note error">{error}</span> : null}
+    </>
   )
 }
 

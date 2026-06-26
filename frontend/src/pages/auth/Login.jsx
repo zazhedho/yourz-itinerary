@@ -3,21 +3,34 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
 import ErrorBanner from '../../components/common/ErrorBanner'
+import GoogleIdentityButton from '../../components/common/GoogleIdentityButton'
 import { useAuth } from '../../hooks/useAuth'
 import useRegisterStatus from '../../hooks/useRegisterStatus'
+import { getGoogleClientId } from '../../utils/runtimeConfig'
 
 const Login = () => {
-  const { login, error } = useAuth()
+  const { googleLogin, login, error } = useAuth()
   const { enabled: registerEnabled } = useRegisterStatus()
   const navigate = useNavigate()
   const [form, setForm] = useState({ identifier: '', password: '' })
+  const [googleError, setGoogleError] = useState('')
+  const [googleSubmitting, setGoogleSubmitting] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const googleClientId = getGoogleClientId()
 
   const handleSubmit = async (event) => {
     event.preventDefault()
     setSubmitting(true)
     const ok = await login(form)
     setSubmitting(false)
+    if (ok) navigate('/trips', { replace: true })
+  }
+
+  const handleGoogleCredential = async (idToken) => {
+    setGoogleError('')
+    setGoogleSubmitting(true)
+    const ok = await googleLogin(idToken)
+    setGoogleSubmitting(false)
     if (ok) navigate('/trips', { replace: true })
   }
 
@@ -32,7 +45,16 @@ const Login = () => {
       </section>
 
       <form className="auth-card" onSubmit={handleSubmit}>
-        <ErrorBanner message={error} />
+        <ErrorBanner message={error || googleError} />
+        {googleClientId && (
+          <GoogleIdentityButton
+            disabled={submitting || googleSubmitting}
+            label="Lanjutkan dengan Google"
+            onCredential={handleGoogleCredential}
+            onError={setGoogleError}
+            text="signin_with"
+          />
+        )}
         <label>
           Email atau username
           <input

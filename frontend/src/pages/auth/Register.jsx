@@ -2,7 +2,9 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
 import ErrorBanner from '../../components/common/ErrorBanner'
+import GoogleIdentityButton from '../../components/common/GoogleIdentityButton'
 import Loading from '../../components/common/Loading'
+import { useAuth } from '../../hooks/useAuth'
 import useRegisterStatus from '../../hooks/useRegisterStatus'
 import authService from '../../services/authService'
 import { getErrorMessage } from '../../services/api'
@@ -13,17 +15,22 @@ import {
   passwordStrengthLabel,
   validatePassword,
 } from '../../utils/passwordValidation'
+import { getGoogleClientId } from '../../utils/runtimeConfig'
 
 const Register = () => {
   const navigate = useNavigate()
+  const { error: authError, googleLogin } = useAuth()
   const { enabled, otp_enabled: otpEnabled, loading, error: statusError } = useRegisterStatus()
   const [error, setError] = useState('')
+  const [googleError, setGoogleError] = useState('')
+  const [googleSubmitting, setGoogleSubmitting] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirm_password: '', otp_code: '' })
   const [otpStep, setOtpStep] = useState(false)
   const validation = validatePassword(form.password)
   const strength = passwordStrength(validation)
   const passwordMatches = form.confirm_password && form.password === form.confirm_password
+  const googleClientId = getGoogleClientId()
 
   const handleChange = (event) => {
     setForm((current) => ({ ...current, [event.target.name]: event.target.value }))
@@ -71,6 +78,15 @@ const Register = () => {
     }
   }
 
+  const handleGoogleCredential = async (idToken) => {
+    setError('')
+    setGoogleError('')
+    setGoogleSubmitting(true)
+    const ok = await googleLogin(idToken)
+    setGoogleSubmitting(false)
+    if (ok) navigate('/trips', { replace: true })
+  }
+
   if (loading) {
     return (
       <main className="auth-screen">
@@ -109,9 +125,18 @@ const Register = () => {
         </p>
       </section>
       <form className="auth-card" onSubmit={handleSubmit}>
-        <ErrorBanner message={error} />
+        <ErrorBanner message={error || authError || googleError} />
         {!otpStep ? (
           <>
+            {googleClientId && (
+              <GoogleIdentityButton
+                disabled={submitting || googleSubmitting}
+                label="Daftar dengan Google"
+                onCredential={handleGoogleCredential}
+                onError={setGoogleError}
+                text="signup_with"
+              />
+            )}
             <label>
               Nama
               <input name="name" value={form.name} onChange={handleChange} required />

@@ -1,13 +1,15 @@
 import { GoogleMap } from '@react-google-maps/api'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
+import { getGoogleMapsMapId } from '../../utils/runtimeConfig'
+
 const defaultCenter = { lat: -6.2, lng: 106.816666 }
 const mapContainerStyle = { width: '100%', height: '100%' }
-const mapId = import.meta.env.VITE_GOOGLE_MAPS_MAP_ID || 'DEMO_MAP_ID'
 
 const CoordinatePicker = ({ latitude, longitude, onPick }) => {
   const markerRef = useRef(null)
   const [map, setMap] = useState(null)
+  const mapId = getGoogleMapsMapId()
   const lat = Number(latitude)
   const lng = Number(longitude)
   const hasPosition =

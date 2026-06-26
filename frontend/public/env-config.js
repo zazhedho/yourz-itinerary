@@ -1,0 +1,6 @@
+window.ENV_CONFIG = {
+  API_URL: '',
+  GOOGLE_CLIENT_ID: '',
+  GOOGLE_MAPS_API_KEY: '',
+  GOOGLE_MAPS_MAP_ID: '',
+}
