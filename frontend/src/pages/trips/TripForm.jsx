@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Calendar } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import ErrorBanner from '../../components/common/ErrorBanner'
@@ -86,17 +87,38 @@ const TripForm = () => {
         <div className="form-grid">
           <label>
             Mulai
-            <input name="start_date" type="date" value={form.start_date} onChange={handleChange} />
+            <div className="date-input-wrapper">
+              <Calendar className="date-input-icon" size={16} />
+              <input 
+                name="start_date" 
+                type={form.start_date ? 'date' : 'text'} 
+                onFocus={(e) => (e.target.type = 'date')}
+                onBlur={(e) => {
+                  if (!e.target.value) e.target.type = 'text'
+                }}
+                value={form.start_date} 
+                onChange={handleChange} 
+                placeholder="dd/mm/yyyy"
+              />
+            </div>
           </label>
           <label>
             Selesai
-            <input
-              min={form.start_date || undefined}
-              name="end_date"
-              type="date"
-              value={form.end_date}
-              onChange={handleChange}
-            />
+            <div className="date-input-wrapper">
+              <Calendar className="date-input-icon" size={16} />
+              <input
+                min={form.start_date || undefined}
+                name="end_date"
+                type={form.end_date ? 'date' : 'text'}
+                onFocus={(e) => (e.target.type = 'date')}
+                onBlur={(e) => {
+                  if (!e.target.value) e.target.type = 'text'
+                }}
+                value={form.end_date}
+                onChange={handleChange}
+                placeholder="dd/mm/yyyy"
+              />
+            </div>
           </label>
         </div>
         <button className="button-primary" disabled={submitting} type="submit">
