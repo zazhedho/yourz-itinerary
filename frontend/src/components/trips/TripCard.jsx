@@ -19,7 +19,7 @@ const TripCard = ({ trip, index = 0 }) => {
   }, [trip.destination, index])
 
   return (
-    <Link className="trip-card" to={`/trips/${trip.id}`}>
+    <Link className="trip-card" state={{ index }} to={`/trips/${trip.id}`}>
       {coverPhoto ? (
         <img alt={trip.destination || trip.title} src={coverPhoto} />
       ) : (

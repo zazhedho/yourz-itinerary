@@ -1,6 +1,6 @@
 import { CalendarDays, Edit3, ListChecks, LogOut, Plus, Trash2, UserMinus, UserPlus, UsersRound, Calendar, Wallet, Settings, X } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useLocation } from 'react-router-dom'
 
 import ConfirmDialog from '../../components/common/ConfirmDialog'
 import DayTimeline from '../../components/itinerary/DayTimeline'
@@ -22,6 +22,8 @@ const memberDisplayMeta = (member) => member.user_email || member.user_id
 const TripDetail = () => {
   const { tripId } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
+  const index = location.state?.index || 0
   const { confirm, dialogProps } = useConfirm()
   const [trip, setTrip] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -31,16 +33,15 @@ const TripDetail = () => {
   const [coverPhoto, setCoverPhoto] = useState(null)
 
   useEffect(() => {
-    if (trip?.destination) {
-      let active = true
-      getDestinationPhoto(trip.destination).then((url) => {
-        if (active) setCoverPhoto(url)
-      })
-      return () => {
-        active = false
-      }
+    if (!trip?.destination) return
+    let active = true
+    getDestinationPhoto(trip.destination, index).then((url) => {
+      if (active) setCoverPhoto(url)
+    })
+    return () => {
+      active = false
     }
-  }, [trip?.destination])
+  }, [trip?.destination, index])
 
   const loadTrip = useCallback(() => {
     setLoading(true)
@@ -131,12 +132,24 @@ const TripDetail = () => {
   const totalCostEstimate = trip.total_cost_estimate ?? calculatedCostEstimate
 
   const getNextDate = () => {
-    if (days.length === 0) return trip.start_date ? trip.start_date.split('T')[0] : ''
-    const validDates = days.filter(d => d.date).map(d => new Date(d.date).getTime())
-    if (validDates.length === 0) return trip.start_date ? trip.start_date.split('T')[0] : ''
+    if (days.length === 0) return trip.start_date ? String(trip.start_date).split('T')[0] : ''
+    const validDates = days
+      .filter(d => d.date)
+      .map(d => new Date(d.date).getTime())
+      .filter(t => !isNaN(t))
+      
+    if (validDates.length === 0) return trip.start_date ? String(trip.start_date).split('T')[0] : ''
+    
     const nextDate = new Date(Math.max(...validDates))
     nextDate.setDate(nextDate.getDate() + 1)
     return nextDate.toISOString().split('T')[0]
+  }
+
+  const getNextDayNumber = () => {
+    if (days.length === 0) return 1
+    const nums = days.map(d => Number(d.day_number)).filter(n => !isNaN(n))
+    if (nums.length === 0) return 1
+    return Math.max(...nums) + 1
   }
 
   return (
@@ -250,7 +263,7 @@ const TripDetail = () => {
             <p className="eyebrow">Timeline</p>
             <h2>Rencana perjalanan</h2>
           </div>
-          <Link className="icon-link" state={{ nextDayNumber: days.length > 0 ? Math.max(...days.map(d => d.day_number)) + 1 : 1, nextDate: getNextDate() }} to={`/trips/${trip.id}/days/new`} title="Tambah hari">
+          <Link className="icon-link" state={{ nextDayNumber: getNextDayNumber(), nextDate: getNextDate() }} to={`/trips/${trip.id}/days/new`} title="Tambah hari">
             <Plus size={18} />
           </Link>
         </div>

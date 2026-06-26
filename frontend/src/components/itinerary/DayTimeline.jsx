@@ -5,11 +5,11 @@ import { Link } from 'react-router-dom'
 import { formatDate, formatMoney, formatTime } from '../../utils/formatters'
 
 const DayTimeline = ({ days = [], currency = 'IDR', onDeleteDay, onDeleteItem }) => {
-  const [collapsedDays, setCollapsedDays] = useState({})
+  const [expandedDays, setExpandedDays] = useState({})
   const [expandedActions, setExpandedActions] = useState({})
 
   const toggleDay = (dayId) => {
-    setCollapsedDays(prev => ({
+    setExpandedDays(prev => ({
       ...prev,
       [dayId]: !prev[dayId]
     }))
@@ -36,7 +36,7 @@ const DayTimeline = ({ days = [], currency = 'IDR', onDeleteDay, onDeleteItem })
             <div className="day-title-group">
               <button 
                 type="button" 
-                className={`collapse-toggle ${collapsedDays[day.id] ? 'collapsed' : ''}`}
+                className={`collapse-toggle ${!expandedDays[day.id] ? 'collapsed' : ''}`}
                 aria-label="Toggle collapse"
               >
                 <ChevronDown size={20} />
@@ -75,7 +75,7 @@ const DayTimeline = ({ days = [], currency = 'IDR', onDeleteDay, onDeleteItem })
             </div>
           </div>
 
-          <div className={`item-list-wrapper ${collapsedDays[day.id] ? 'collapsed' : ''}`}>
+          <div className={`item-list-wrapper ${!expandedDays[day.id] ? 'collapsed' : ''}`}>
             <div className="item-list-inner">
               <div className="item-list">
                 {(day.items || []).length ? (

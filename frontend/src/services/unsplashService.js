@@ -17,12 +17,19 @@ export const getDestinationPhoto = async (destination, index = 0) => {
   }
 
   const query = destination.trim().toLowerCase()
-  const cacheKey = `unsplash_cover_${query}`
+  const cacheKey = `unsplash_covers_${query}`
 
   // Check cache first
   const cached = localStorage.getItem(cacheKey)
   if (cached) {
-    return cached
+    try {
+      const urls = JSON.parse(cached)
+      if (Array.isArray(urls) && urls.length > 0) {
+        return urls[index % urls.length]
+      }
+    } catch (e) {
+      // old cache or invalid JSON, will refetch
+    }
   }
 
   // If no access key or rate limit exceeded, return default
@@ -32,7 +39,7 @@ export const getDestinationPhoto = async (destination, index = 0) => {
 
   try {
     const response = await fetch(
-      `${UNSPLASH_API_URL}/search/photos?query=${encodeURIComponent(query + ' landmark')}&orientation=landscape&per_page=1`,
+      `${UNSPLASH_API_URL}/search/photos?query=${encodeURIComponent(query + ' landmark')}&orientation=landscape&per_page=5`,
       {
         headers: {
           Authorization: `Client-ID ${ACCESS_KEY}`,
@@ -46,10 +53,9 @@ export const getDestinationPhoto = async (destination, index = 0) => {
 
     const data = await response.json()
     if (data.results && data.results.length > 0) {
-      const imageUrl = data.results[0].urls.regular
-      // Cache it
-      localStorage.setItem(cacheKey, imageUrl)
-      return imageUrl
+      const urls = data.results.map(res => res.urls.regular)
+      localStorage.setItem(cacheKey, JSON.stringify(urls))
+      return urls[index % urls.length]
     }
     
     // No results found
