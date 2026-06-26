@@ -3,6 +3,14 @@ export const emptyToUndefined = (value) => {
   return value
 }
 
+export const normalizeClockTime = (value) => {
+  if (!value) return value
+  const trimmed = String(value).trim()
+  const match = trimmed.match(/^(\d{2}):(\d{2})(?::\d{2}(?:\.\d+)?)?$/)
+  if (!match) return trimmed
+  return `${match[1]}:${match[2]}`
+}
+
 const stripUndefined = (payload) =>
   Object.fromEntries(Object.entries(payload).filter(([, value]) => value !== undefined && value !== null))
 
@@ -31,8 +39,8 @@ export const buildItineraryItemPayload = (form) =>
     location_name: emptyToUndefined(form.location_name?.trim()),
     latitude: form.latitude === '' ? undefined : Number(form.latitude),
     longitude: form.longitude === '' ? undefined : Number(form.longitude),
-    start_time: emptyToUndefined(form.start_time),
-    end_time: emptyToUndefined(form.end_time),
+    start_time: emptyToUndefined(normalizeClockTime(form.start_time)),
+    end_time: emptyToUndefined(normalizeClockTime(form.end_time)),
     cost_estimate: Number(form.cost_estimate || 0),
     sort_order: form.sort_order ? Number(form.sort_order) : undefined,
   })

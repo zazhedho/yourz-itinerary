@@ -6,7 +6,7 @@ import ErrorBanner from '../../components/common/ErrorBanner'
 import Loading from '../../components/common/Loading'
 import { getErrorMessage } from '../../services/api'
 import itineraryItemService from '../../services/itineraryItemService'
-import { buildItineraryItemPayload } from '../../utils/payloads'
+import { buildItineraryItemPayload, normalizeClockTime } from '../../utils/payloads'
 
 const CoordinatePicker = lazy(() => import('../../components/maps/CoordinatePicker'))
 
@@ -23,8 +23,8 @@ const ItineraryItemForm = () => {
     location_name: existingItem?.location_name || '',
     latitude: existingItem?.latitude ?? '',
     longitude: existingItem?.longitude ?? '',
-    start_time: existingItem?.start_time || '',
-    end_time: existingItem?.end_time || '',
+    start_time: normalizeClockTime(existingItem?.start_time || ''),
+    end_time: normalizeClockTime(existingItem?.end_time || ''),
     cost_estimate: existingItem?.cost_estimate || 0,
   })
 

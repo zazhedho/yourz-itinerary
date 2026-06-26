@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { buildItineraryItemPayload, buildTripPayload, emptyToUndefined } from './payloads'
+import { buildItineraryItemPayload, buildTripPayload, emptyToUndefined, normalizeClockTime } from './payloads'
 
 describe('payload builders', () => {
   it('removes empty optional trip fields', () => {
@@ -38,6 +38,28 @@ describe('payload builders', () => {
       latitude: -8.718,
       longitude: 115.168,
       cost_estimate: 120000,
+    })
+  })
+
+  it('normalizes API clock times before submitting item payloads', () => {
+    expect(normalizeClockTime('09:15:00')).toBe('09:15')
+    expect(normalizeClockTime('09:15')).toBe('09:15')
+    expect(normalizeClockTime('invalid')).toBe('invalid')
+
+    expect(
+      buildItineraryItemPayload({
+        title: 'Sarapan',
+        latitude: '',
+        longitude: '',
+        start_time: '09:15:00',
+        end_time: '10:45:00',
+        cost_estimate: '',
+      }),
+    ).toEqual({
+      title: 'Sarapan',
+      start_time: '09:15',
+      end_time: '10:45',
+      cost_estimate: 0,
     })
   })
 

@@ -8,7 +8,7 @@ export const formatDate = (dateString) => {
       month: 'short',
       year: 'numeric'
     }).format(date)
-  } catch (err) {
+  } catch {
     return dateString
   }
 }
@@ -32,4 +32,13 @@ export const roleLabel = (role) => {
   if (role === 'editor') return 'Editor'
   if (role === 'viewer') return 'Viewer'
   return role || '-'
+}
+
+export const formatTime = (timeString) => {
+  if (!timeString) return ''
+  const parts = timeString.split(':')
+  if (parts.length >= 2) {
+    return `${parts[0]}:${parts[1]}`
+  }
+  return timeString
 }
