@@ -1,7 +1,7 @@
 import { GripVertical, MapPin, Pencil, Plus, Trash2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
-import { formatMoney } from '../../utils/formatters'
+import { formatDate, formatMoney } from '../../utils/formatters'
 
 const DayTimeline = ({ days = [], currency = 'IDR', onDeleteDay, onDeleteItem }) => {
   if (!days.length) {
@@ -15,7 +15,7 @@ const DayTimeline = ({ days = [], currency = 'IDR', onDeleteDay, onDeleteItem })
           <div className="day-card-header">
             <div>
               <p className="eyebrow">Day {day.day_number}</p>
-              <h3>{day.title || day.date || 'Rencana hari ini'}</h3>
+              <h3>{day.title || (day.date ? formatDate(day.date) : 'Rencana hari ini')}</h3>
             </div>
             <div className="inline-actions">
               <Link className="icon-link" state={{ day }} to={`/itinerary-days/${day.id}/edit`} title="Edit hari">

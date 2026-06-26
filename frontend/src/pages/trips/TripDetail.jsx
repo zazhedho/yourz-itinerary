@@ -1,4 +1,4 @@
-import { Edit3, LogOut, Plus, Trash2, UserMinus, UserPlus } from 'lucide-react'
+import { CalendarDays, Edit3, ListChecks, LogOut, Plus, Trash2, UserMinus, UserPlus, UsersRound, Calendar, Wallet, Settings, X } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
@@ -25,6 +25,8 @@ const TripDetail = () => {
   const [trip, setTrip] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [showMembers, setShowMembers] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
 
   const loadTrip = useCallback(() => {
     setLoading(true)
@@ -112,83 +114,97 @@ const TripDetail = () => {
   return (
     <section className="screen-stack trip-detail-screen">
       <div className="detail-cover">
+        <div className="cover-top-actions">
+          <Link className="detail-cover-action" to={`/trips/${trip.id}/edit`} title="Edit trip" aria-label="Edit trip">
+            <Edit3 size={17} />
+          </Link>
+          <button className="detail-cover-action" onClick={() => setShowSettings(true)} title="Pengaturan lanjutan" aria-label="Pengaturan lanjutan" type="button">
+            <Settings size={17} />
+          </button>
+        </div>
         <div>
           <p className="detail-kicker">{trip.destination || 'Shared itinerary'}</p>
           <h2>{trip.title}</h2>
           <div className="detail-meta-row">
-            <span>{formatDateRange(trip.start_date, trip.end_date)}</span>
-            <span>{trip.currency_code}</span>
+            <span>
+              <Calendar size={14} /> {formatDateRange(trip.start_date, trip.end_date)}
+            </span>
+            <span>
+              <Wallet size={14} /> {trip.currency_code}
+            </span>
           </div>
         </div>
       </div>
 
       <div className="trip-summary-grid">
         <div>
+          <span className="summary-icon">
+            <CalendarDays size={16} />
+          </span>
           <strong>{days.length}</strong>
           <span>Hari</span>
         </div>
         <div>
+          <span className="summary-icon">
+            <ListChecks size={16} />
+          </span>
           <strong>{itemCount}</strong>
           <span>Aktivitas</span>
         </div>
-        <div>
+        <button
+          aria-expanded={showMembers}
+          aria-controls="trip-member-list"
+          className="summary-button"
+          onClick={() => setShowMembers((value) => !value)}
+          type="button"
+        >
+          <span className="summary-icon">
+            <UsersRound size={16} />
+          </span>
           <strong>{members.length}</strong>
           <span>Member</span>
-        </div>
+        </button>
       </div>
 
       <ErrorBanner message={error} />
 
-      <section className="action-panel" aria-label="Trip actions">
-        <Link className="action-tile" to={`/trips/${trip.id}/edit`}>
-          <Edit3 size={18} />
-          <span>Edit trip</span>
-        </Link>
-        <Link className="action-tile" to={`/trips/${trip.id}/members/add`}>
-          <UserPlus size={18} />
-          <span>Tambah member</span>
-        </Link>
-        <Link className="action-tile primary" to={`/trips/${trip.id}/days/new`}>
-          <Plus size={19} />
-          <span>Tambah hari</span>
-        </Link>
-      </section>
-
-      <section className="content-section">
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow">Members</p>
-            <h2>Akses itinerary</h2>
+      {showMembers && (
+        <section className="content-section" id="trip-member-list">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">Members</p>
+              <h2>Akses itinerary</h2>
+            </div>
+            <Link className="icon-link" to={`/trips/${trip.id}/members/add`} title="Tambah member">
+              <UserPlus size={16} />
+            </Link>
           </div>
-          <Link className="icon-link" to={`/trips/${trip.id}/members/add`} title="Tambah member">
-            <UserPlus size={16} />
-          </Link>
-        </div>
-        <div className="member-list">
-          {members.map((member) => (
-            <article className="member-row" key={member.id}>
-              <div className="member-avatar">
-                {member.avatar_url ? <img alt="" src={member.avatar_url} /> : memberDisplayName(member).charAt(0)}
-              </div>
-              <div>
-                <strong>{memberDisplayName(member)}</strong>
-                <span>{memberDisplayMeta(member)}</span>
-                <small>{roleLabel(member.role)}</small>
-              </div>
-              {member.role !== 'owner' && (
-                <div className="member-actions">
-                  <Link state={{ member }} to={`/trips/${trip.id}/members/${member.id}/role`}>
-                    Edit role
-                  </Link>
-                  <button onClick={() => handleRemoveMember(member)} type="button" title="Hapus member">
-                    <UserMinus size={14} />
-                  </button>
+          <div className="member-list">
+            {members.map((member) => (
+              <article className="member-row" key={member.id}>
+                <div className="member-avatar">
+                  {member.avatar_url ? <img alt="" src={member.avatar_url} /> : memberDisplayName(member).charAt(0)}
                 </div>
-              )}
-            </article>
-          ))}
-        </div>
-      </section>
+                <div>
+                  <strong>{memberDisplayName(member)}</strong>
+                  <span>{memberDisplayMeta(member)}</span>
+                  <small>{roleLabel(member.role)}</small>
+                </div>
+                {member.role !== 'owner' && (
+                  <div className="member-actions">
+                    <Link state={{ member }} to={`/trips/${trip.id}/members/${member.id}/role`}>
+                      Edit role
+                    </Link>
+                    <button onClick={() => handleRemoveMember(member)} type="button" title="Hapus member">
+                      <UserMinus size={14} />
+                    </button>
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="content-section">
         <div className="section-heading">
@@ -208,20 +224,41 @@ const TripDetail = () => {
         />
       </section>
 
-      <section className="danger-zone">
-        <div>
-          <p className="eyebrow">Danger zone</p>
-          <h2>Aksi trip</h2>
+      {showSettings && (
+        <div className="dialog-backdrop" onClick={() => setShowSettings(false)}>
+          <div className="dialog-card" onClick={(e) => e.stopPropagation()}>
+            <div className="section-heading" style={{ marginBottom: 20 }}>
+              <h2>Pengaturan Lanjutan</h2>
+              <button className="modal-close" onClick={() => setShowSettings(false)} type="button" aria-label="Tutup">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="danger-list">
+              <div className="danger-row">
+                <div className="danger-text">
+                  <strong>Keluar dari Trip</strong>
+                  <span>Anda akan kehilangan akses ke itinerary ini.</span>
+                </div>
+                <button aria-label="Keluar dari trip" onClick={() => { setShowSettings(false); handleLeaveTrip(); }} type="button">
+                  <LogOut size={16} />
+                  Keluar
+                </button>
+              </div>
+              <div className="danger-row">
+                <div className="danger-text">
+                  <strong>Hapus Trip</strong>
+                  <span>Tindakan ini permanen dan menghapus data.</span>
+                </div>
+                <button aria-label="Hapus trip" onClick={() => { setShowSettings(false); handleDeleteTrip(); }} type="button">
+                  <Trash2 size={16} />
+                  Hapus
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
-        <button aria-label="Keluar dari trip" onClick={handleLeaveTrip} type="button">
-          <LogOut size={17} />
-          Keluar
-        </button>
-        <button aria-label="Hapus trip" onClick={handleDeleteTrip} type="button">
-          <Trash2 size={17} />
-          Hapus
-        </button>
-      </section>
+      )}
+
       <ConfirmDialog {...dialogProps} />
     </section>
   )

@@ -1,7 +1,22 @@
+export const formatDate = (dateString) => {
+  if (!dateString) return ''
+  try {
+    const date = new Date(dateString)
+    if (isNaN(date.getTime())) return dateString
+    return new Intl.DateTimeFormat('id-ID', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    }).format(date)
+  } catch (err) {
+    return dateString
+  }
+}
+
 export const formatDateRange = (startDate, endDate) => {
-  if (startDate && endDate) return `${startDate} - ${endDate}`
-  if (startDate) return startDate
-  if (endDate) return endDate
+  if (startDate && endDate) return `${formatDate(startDate)} - ${formatDate(endDate)}`
+  if (startDate) return formatDate(startDate)
+  if (endDate) return formatDate(endDate)
   return 'Tanggal belum diatur'
 }
 
