@@ -23,15 +23,15 @@ const AppShell = () => {
       </main>
 
       <nav className="bottom-nav" aria-label="Primary">
-        <NavLink to="/trips">
+        <NavLink end to="/trips">
           <CalendarDays size={20} />
           <span>Trips</span>
         </NavLink>
-        <NavLink to="/trips/new">
+        <NavLink end to="/trips/new">
           <Plus size={22} />
           <span>Buat</span>
         </NavLink>
-        <NavLink to="/trips">
+        <NavLink end to="/map-picker">
           <MapPin size={20} />
           <span>Map</span>
         </NavLink>

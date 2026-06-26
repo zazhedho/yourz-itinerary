@@ -1,7 +1,7 @@
 .app-shell {
   min-height: 100vh;
   background: var(--color-soft);
-  padding-bottom: 84px;
+  padding-bottom: calc(84px + env(safe-area-inset-bottom));
 }
 
 .mobile-header {
@@ -80,9 +80,11 @@
   gap: 8px;
   width: min(100%, 760px);
   margin: 0 auto;
-  padding: 10px 14px 14px;
+  padding: 10px 14px calc(14px + env(safe-area-inset-bottom));
   background: rgba(255, 255, 255, 0.98);
   border-top: 1px solid var(--color-hairline);
+  box-shadow: 0 -12px 28px rgba(24, 24, 27, 0.08);
+  backdrop-filter: blur(14px);
 }
 
 .bottom-nav a {
@@ -94,7 +96,16 @@
   gap: 3px;
   color: var(--color-muted);
   font-size: 12px;
+  font-weight: 700;
   border-radius: var(--radius-sm);
+  transition:
+    background 0.16s ease,
+    color 0.16s ease,
+    transform 0.16s ease;
+}
+
+.bottom-nav a:active {
+  transform: translateY(1px);
 }
 
 .bottom-nav a.active {
@@ -174,6 +185,78 @@
   font-weight: 700;
 }
 
+.password-validation-card {
+  padding: 14px;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-sm);
+  background: #ffffff;
+}
+
+.password-meter-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.password-meter {
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e5e7eb;
+}
+
+.password-meter span {
+  display: block;
+  min-width: 8px;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #c2410c 0%, #b7791f 48%, #157347 100%);
+}
+
+.password-meter-row strong {
+  min-width: 44px;
+  color: var(--color-ink);
+  font-size: 11px;
+  line-height: 1;
+  text-align: right;
+}
+
+.password-requirements {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.password-requirements span {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--color-hairline);
+  border-radius: 999px;
+  padding: 5px 8px;
+  color: var(--color-muted);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.password-requirements span.valid {
+  border-color: #cdeed9;
+  color: #157347;
+  background: #f3fbf6;
+}
+
+.password-match-note {
+  color: #b42318;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.password-match-note.valid {
+  color: #157347;
+}
+
 label {
   display: grid;
   gap: 8px;
@@ -217,6 +300,7 @@ textarea:focus {
   border-radius: var(--radius-sm);
   padding: 12px 18px;
   font-weight: 700;
+  cursor: pointer;
 }
 
 .button-primary {
@@ -231,6 +315,7 @@ textarea:focus {
 
 .button-primary:disabled {
   background: #ffd1da;
+  cursor: not-allowed;
 }
 
 .button-secondary {
