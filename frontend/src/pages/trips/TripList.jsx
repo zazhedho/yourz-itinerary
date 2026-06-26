@@ -25,16 +25,10 @@ const TripList = () => {
 
   return (
     <section className="screen-stack">
-      <div className="hero-photo-card">
+      <div className="section-header" style={{ marginBottom: '8px', marginTop: '12px' }}>
         <div>
-          <p className="eyebrow">Mobile itinerary</p>
-          <h2>Semua rencana trip dalam satu timeline.</h2>
-        </div>
-      </div>
-      <div className="section-header">
-        <div>
-          <p className="eyebrow">Trips</p>
-          <h2>Itinerary kamu</h2>
+          <p className="eyebrow" style={{ color: 'var(--color-brand)' }}>Dashboard</p>
+          <h1 style={{ margin: 0, fontSize: '28px', fontWeight: '800', letterSpacing: '-0.5px' }}>Itinerary Kamu</h1>
         </div>
         <Link className="button-circle" to="/trips/new" title="Buat trip">
           <Plus size={20} />

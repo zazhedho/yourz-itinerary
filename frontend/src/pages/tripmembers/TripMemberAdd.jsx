@@ -44,6 +44,7 @@ const TripMemberAdd = () => {
             type="email"
             value={form.email}
             onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
+            placeholder="Contoh: teman@email.com"
             required
           />
         </label>

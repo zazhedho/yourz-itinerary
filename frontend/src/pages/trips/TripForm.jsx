@@ -77,11 +77,11 @@ const TripForm = () => {
         <ErrorBanner message={error} />
         <label>
           Judul trip
-          <input name="title" value={form.title} onChange={handleChange} required />
+          <input name="title" value={form.title} onChange={handleChange} placeholder="Contoh: Liburan Musim Panas di Bali" required />
         </label>
         <label>
           Destinasi
-          <input name="destination" value={form.destination} onChange={handleChange} />
+          <input name="destination" value={form.destination} onChange={handleChange} placeholder="Contoh: Bali, Indonesia" />
         </label>
         <div className="form-grid">
           <label>

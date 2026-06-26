@@ -86,7 +86,7 @@ const ItineraryItemForm = () => {
         <ErrorBanner message={error} />
         <label>
           Judul aktivitas
-          <input name="title" value={form.title} onChange={handleChange} required />
+          <input name="title" value={form.title} onChange={handleChange} placeholder="Contoh: Makan Siang di Restoran Lokal" required />
         </label>
         <label>
           Lokasi
@@ -141,11 +141,11 @@ const ItineraryItemForm = () => {
         </div>
         <label>
           Estimasi biaya
-          <input name="cost_estimate" min="0" type="number" value={form.cost_estimate} onChange={handleChange} />
+          <input name="cost_estimate" min="0" type="number" value={form.cost_estimate} onChange={handleChange} placeholder="Contoh: 150000" />
         </label>
         <label>
           Catatan
-          <textarea name="description" value={form.description} onChange={handleChange} />
+          <textarea name="description" value={form.description} onChange={handleChange} placeholder="Contoh: Bawa uang tunai, reservasi atas nama Budi." rows="3" />
         </label>
         <button className="button-primary" disabled={submitting} type="submit">
           {submitting ? 'Menyimpan...' : 'Simpan aktivitas'}

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 
 const GooglePlaceAutocomplete = ({ disabled, isLoaded, name, onChange, onPlaceSelect, placeholder, value }) => {
-  const containerRef = useRef(null)
+  const inputRef = useRef(null)
   const onPlaceSelectRef = useRef(onPlaceSelect)
   const [error, setError] = useState('')
 
@@ -10,27 +10,50 @@ const GooglePlaceAutocomplete = ({ disabled, isLoaded, name, onChange, onPlaceSe
   }, [onPlaceSelect])
 
   useEffect(() => {
-    if (!isLoaded || !containerRef.current) return undefined
+    if (!isLoaded || !inputRef.current) return undefined
 
     let active = true
-    let autocompleteElement = null
+    let autocomplete = null
+    let listener = null
 
     const initAutocomplete = async () => {
       try {
-        const { PlaceAutocompleteElement } = await window.google.maps.importLibrary('places')
-        if (!active || !containerRef.current) return
+        // Fallback or explicit check if places library is available
+        if (!window.google?.maps?.places?.Autocomplete) {
+          await window.google.maps.importLibrary('places')
+        }
+        
+        if (!active || !inputRef.current) return
 
-        autocompleteElement = new PlaceAutocompleteElement()
-        autocompleteElement.placeholder = 'Cari tempat di Google Maps'
-        autocompleteElement.className = 'google-place-autocomplete'
-        autocompleteElement.addEventListener('gmp-select', async ({ placePrediction }) => {
-          const place = placePrediction.toPlace()
-          await place.fetchFields({ fields: ['displayName', 'formattedAddress', 'location'] })
-          onPlaceSelectRef.current(place)
+        autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
+          fields: ['name', 'geometry', 'address_components', 'formatted_address'],
         })
 
-        containerRef.current.replaceChildren(autocompleteElement)
-      } catch {
+        // Prevent the autocomplete from closing the keyboard and becoming full screen by keeping it contained in the native input dropdown.
+        listener = autocomplete.addListener('place_changed', () => {
+          const place = autocomplete.getPlace()
+          
+          let cityName = ''
+          if (place.address_components) {
+            const city = place.address_components.find(c => 
+              c.types.includes('locality') || c.types.includes('administrative_area_level_2')
+            )
+            if (city) cityName = city.long_name
+          }
+          
+          const displayName = place.name || ''
+          const locationName = cityName && !displayName.includes(cityName) 
+            ? `${displayName}, ${cityName}`
+            : displayName
+
+          // Call parent handler
+          onPlaceSelectRef.current({
+            displayName: locationName,
+            formattedAddress: place.formatted_address,
+            location: place.geometry?.location
+          })
+        })
+      } catch (err) {
         if (active) setError('Pencarian lokasi gagal dimuat.')
       }
     }
@@ -39,14 +62,21 @@ const GooglePlaceAutocomplete = ({ disabled, isLoaded, name, onChange, onPlaceSe
 
     return () => {
       active = false
-      autocompleteElement?.remove()
+      if (listener) {
+        window.google.maps.event.removeListener(listener)
+      }
+      // Cleanup the google maps autocomplete bindings on the input element if possible
+      if (inputRef.current) {
+        const pacContainer = document.querySelector('.pac-container')
+        if (pacContainer) pacContainer.remove()
+      }
     }
   }, [isLoaded])
 
   return (
     <>
-      {isLoaded ? <div ref={containerRef} className="google-place-autocomplete-host" /> : null}
       <input
+        ref={inputRef}
         name={name}
         type="text"
         placeholder={placeholder}

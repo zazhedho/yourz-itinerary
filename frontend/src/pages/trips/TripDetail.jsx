@@ -12,6 +12,7 @@ import itineraryItemService from '../../services/itineraryItemService'
 import tripMemberService from '../../services/tripMemberService'
 import tripService from '../../services/tripService'
 import { getErrorMessage, getResponseData } from '../../services/api'
+import { getDestinationPhoto } from '../../services/unsplashService'
 import { formatDateRange, roleLabel } from '../../utils/formatters'
 
 const shortId = (value = '') => value.slice(0, 8)
@@ -27,6 +28,19 @@ const TripDetail = () => {
   const [error, setError] = useState('')
   const [showMembers, setShowMembers] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [coverPhoto, setCoverPhoto] = useState(null)
+
+  useEffect(() => {
+    if (trip?.destination) {
+      let active = true
+      getDestinationPhoto(trip.destination).then((url) => {
+        if (active) setCoverPhoto(url)
+      })
+      return () => {
+        active = false
+      }
+    }
+  }, [trip?.destination])
 
   const loadTrip = useCallback(() => {
     setLoading(true)
@@ -113,7 +127,10 @@ const TripDetail = () => {
 
   return (
     <section className="screen-stack trip-detail-screen">
-      <div className="detail-cover">
+      <div 
+        className="detail-cover"
+        style={coverPhoto ? { backgroundImage: `linear-gradient(180deg, rgba(0, 0, 0, 0.05) 0%, rgba(0, 0, 0, 0.75) 100%), url("${coverPhoto}")` } : undefined}
+      >
         <div className="cover-top-actions">
           <Link className="detail-cover-action" to={`/trips/${trip.id}/edit`} title="Edit trip" aria-label="Edit trip">
             <Edit3 size={17} />

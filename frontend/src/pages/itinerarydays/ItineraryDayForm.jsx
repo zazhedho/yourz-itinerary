@@ -56,11 +56,11 @@ const ItineraryDayForm = () => {
         <ErrorBanner message={error} />
         <label>
           Nomor hari
-          <input min="1" name="day_number" type="number" value={form.day_number} onChange={handleChange} required />
+          <input min="1" name="day_number" type="number" value={form.day_number} onChange={handleChange} placeholder="Contoh: 1" required />
         </label>
         <label>
-          Judul
-          <input name="title" value={form.title} onChange={handleChange} />
+          Judul hari (Opsional)
+          <input name="title" value={form.title} onChange={handleChange} placeholder="Contoh: Eksplorasi Kota & Kuliner" />
         </label>
         <label>
           Tanggal

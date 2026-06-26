@@ -1,37 +1,51 @@
 import { CalendarDays, MapPin, UsersRound } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 
 import { formatDateRange } from '../../utils/formatters'
+import { getDestinationPhoto } from '../../services/unsplashService'
 
-const photos = [
-  'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=80',
-  'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80',
-  'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&w=900&q=80',
-]
+const TripCard = ({ trip, index = 0 }) => {
+  const [coverPhoto, setCoverPhoto] = useState(null)
 
-const TripCard = ({ trip, index = 0 }) => (
-  <Link className="trip-card" to={`/trips/${trip.id}`}>
-    <img alt={trip.title} src={photos[index % photos.length]} />
-    <div className="trip-card-body">
-      <div>
-        <h2>{trip.title}</h2>
-        <p>
-          <MapPin size={14} />
-          {trip.destination || 'Destinasi belum diatur'}
-        </p>
+  useEffect(() => {
+    let active = true
+    getDestinationPhoto(trip.destination, index).then((url) => {
+      if (active) setCoverPhoto(url)
+    })
+    return () => {
+      active = false
+    }
+  }, [trip.destination, index])
+
+  return (
+    <Link className="trip-card" to={`/trips/${trip.id}`}>
+      {coverPhoto ? (
+        <img alt={trip.destination || trip.title} src={coverPhoto} />
+      ) : (
+        <div className="trip-card-placeholder" style={{ width: '100%', height: '140px', background: '#e2e8f0' }} />
+      )}
+      <div className="trip-card-body">
+        <div>
+          <h2>{trip.title}</h2>
+          <p>
+            <MapPin size={14} />
+            {trip.destination || 'Destinasi belum diatur'}
+          </p>
+        </div>
+        <div className="trip-meta-grid">
+          <span>
+            <CalendarDays size={14} />
+            {formatDateRange(trip.start_date, trip.end_date)}
+          </span>
+          <span>
+            <UsersRound size={14} />
+            {trip.member_count || 1} member
+          </span>
+        </div>
       </div>
-      <div className="trip-meta-grid">
-        <span>
-          <CalendarDays size={14} />
-          {formatDateRange(trip.start_date, trip.end_date)}
-        </span>
-        <span>
-          <UsersRound size={14} />
-          {trip.member_count || 1} member
-        </span>
-      </div>
-    </div>
-  </Link>
-)
+    </Link>
+  )
+}
 
 export default TripCard
