@@ -5,6 +5,7 @@ import (
 	"time"
 
 	domainitineraryday "yourz-itinerary/internal/domain/itineraryday"
+	domainitineraryitem "yourz-itinerary/internal/domain/itineraryitem"
 	domaintrip "yourz-itinerary/internal/domain/trip"
 	serviceshared "yourz-itinerary/internal/services/shared"
 )
@@ -112,5 +113,30 @@ func TestBuildItineraryDaySyncPlanUpdatesCreatesAndDeletesByDateRange(t *testing
 	}
 	if plan.Delete[0].DayNumber != 4 {
 		t.Fatalf("unexpected deleted day: %+v", plan.Delete[0])
+	}
+}
+
+func TestTripToDetailIncludesTotalCostEstimate(t *testing.T) {
+	day1 := domainitineraryday.ItineraryDay{Id: "day-1", TripId: "trip-1", DayNumber: 1}
+	day2 := domainitineraryday.ItineraryDay{Id: "day-2", TripId: "trip-1", DayNumber: 2}
+
+	result := tripToDetail(
+		domaintrip.Trip{Id: "trip-1", Title: "Bali", CurrencyCode: "IDR"},
+		nil,
+		nil,
+		[]domainitineraryday.ItineraryDay{day1, day2},
+		map[string][]domainitineraryitem.ItineraryItem{
+			"day-1": {
+				{Id: "item-1", DayId: "day-1", CostEstimate: 150000},
+				{Id: "item-2", DayId: "day-1", CostEstimate: 250000},
+			},
+			"day-2": {
+				{Id: "item-3", DayId: "day-2", CostEstimate: 100000},
+			},
+		},
+	)
+
+	if result.TotalCostEstimate != 500000 {
+		t.Fatalf("expected total cost estimate 500000, got %v", result.TotalCostEstimate)
 	}
 }

@@ -40,21 +40,22 @@ type TripListResponse struct {
 }
 
 type TripDetailResponse struct {
-	Id           string                 `json:"id"`
-	OwnerId      string                 `json:"owner_id"`
-	Title        string                 `json:"title"`
-	Destination  *string                `json:"destination,omitempty"`
-	StartDate    *string                `json:"start_date,omitempty"`
-	EndDate      *string                `json:"end_date,omitempty"`
-	Timezone     string                 `json:"timezone"`
-	CurrencyCode string                 `json:"currency_code"`
-	Status       string                 `json:"status"`
-	CreatedBy    string                 `json:"created_by"`
-	UpdatedBy    string                 `json:"updated_by"`
-	CreatedAt    string                 `json:"created_at,omitempty"`
-	UpdatedAt    *string                `json:"updated_at,omitempty"`
-	DeletedBy    *string                `json:"deleted_by,omitempty"`
-	DeletedAt    *string                `json:"deleted_at,omitempty"`
-	Members      []TripMemberResponse   `json:"members"`
-	Days         []ItineraryDayResponse `json:"days"`
+	Id                string                 `json:"id"`
+	OwnerId           string                 `json:"owner_id"`
+	Title             string                 `json:"title"`
+	Destination       *string                `json:"destination,omitempty"`
+	StartDate         *string                `json:"start_date,omitempty"`
+	EndDate           *string                `json:"end_date,omitempty"`
+	Timezone          string                 `json:"timezone"`
+	CurrencyCode      string                 `json:"currency_code"`
+	Status            string                 `json:"status"`
+	TotalCostEstimate float64                `json:"total_cost_estimate"`
+	CreatedBy         string                 `json:"created_by"`
+	UpdatedBy         string                 `json:"updated_by"`
+	CreatedAt         string                 `json:"created_at,omitempty"`
+	UpdatedAt         *string                `json:"updated_at,omitempty"`
+	DeletedBy         *string                `json:"deleted_by,omitempty"`
+	DeletedAt         *string                `json:"deleted_at,omitempty"`
+	Members           []TripMemberResponse   `json:"members"`
+	Days              []ItineraryDayResponse `json:"days"`
 }

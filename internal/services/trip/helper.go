@@ -170,7 +170,11 @@ func tripToDetail(trip domaintrip.Trip, members []domaintripmember.TripMember, u
 
 	dayResponses := make([]dto.ItineraryDayResponse, 0, len(days))
 	for _, d := range days {
-		dayResponses = append(dayResponses, serviceshared.ItineraryDayToResponse(d, itemsByDay[d.Id]))
+		items := itemsByDay[d.Id]
+		for _, item := range items {
+			tr.TotalCostEstimate += item.CostEstimate
+		}
+		dayResponses = append(dayResponses, serviceshared.ItineraryDayToResponse(d, items))
 	}
 	tr.Days = dayResponses
 

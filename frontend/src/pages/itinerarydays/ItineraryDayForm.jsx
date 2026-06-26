@@ -11,10 +11,11 @@ const ItineraryDayForm = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const existingDay = location.state?.day
+  const nextDayNumber = location.state?.nextDayNumber || 1
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [form, setForm] = useState({
-    day_number: existingDay?.day_number || 1,
+    day_number: existingDay?.day_number || nextDayNumber,
     title: existingDay?.title || '',
     date: existingDay?.date || '',
   })

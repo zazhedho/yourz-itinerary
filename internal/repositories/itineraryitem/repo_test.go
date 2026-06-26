@@ -46,6 +46,8 @@ func TestReorderPersistsAuditFields(t *testing.T) {
 	repo := &repo{GenericRepository: repositorygeneric.New[domainitineraryitem.ItineraryItem](db)}
 
 	mock.ExpectBegin()
+	mock.ExpectExec(`UPDATE "itinerary_items" SET "sort_order"=.*WHERE \(id = .* AND day_id =`).
+		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectExec(`UPDATE "itinerary_items" SET .*"updated_at".*"updated_by".*WHERE id =`).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectCommit()

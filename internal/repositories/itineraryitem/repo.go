@@ -34,11 +34,21 @@ func (r *repo) GetByIDs(ctx context.Context, ids []string) ([]domainitineraryite
 
 func (r *repo) Reorder(ctx context.Context, dayId string, items []domainitineraryitem.ItineraryItem) error {
 	return r.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		for index, item := range items {
+			tempSortOrder := -1000000 - index
+			if err := tx.Model(&domainitineraryitem.ItineraryItem{}).
+				Where("id = ? AND day_id = ?", item.Id, dayId).
+				UpdateColumn("sort_order", tempSortOrder).Error; err != nil {
+				return err
+			}
+		}
+
+		now := time.Now()
 		for _, item := range items {
 			if err := tx.Model(&domainitineraryitem.ItineraryItem{}).Where("id = ?", item.Id).Updates(map[string]interface{}{
 				"sort_order": item.SortOrder,
 				"updated_by": item.UpdatedBy,
-				"updated_at": time.Now(),
+				"updated_at": now,
 			}).Error; err != nil {
 				return err
 			}

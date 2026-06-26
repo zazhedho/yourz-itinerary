@@ -13,7 +13,7 @@ import tripMemberService from '../../services/tripMemberService'
 import tripService from '../../services/tripService'
 import { getErrorMessage, getResponseData } from '../../services/api'
 import { getDestinationPhoto } from '../../services/unsplashService'
-import { formatDateRange, roleLabel } from '../../utils/formatters'
+import { formatDateRange, formatMoney, roleLabel } from '../../utils/formatters'
 
 const shortId = (value = '') => value.slice(0, 8)
 const memberDisplayName = (member) => member.user_name || `User ${shortId(member.user_id)}`
@@ -124,6 +124,11 @@ const TripDetail = () => {
   const members = trip.members || []
   const days = trip.days || []
   const itemCount = days.reduce((total, day) => total + (day.items?.length || 0), 0)
+  const calculatedCostEstimate = days.reduce(
+    (total, day) => total + (day.items || []).reduce((dayTotal, item) => dayTotal + Number(item.cost_estimate || 0), 0),
+    0,
+  )
+  const totalCostEstimate = trip.total_cost_estimate ?? calculatedCostEstimate
 
   return (
     <section className="screen-stack trip-detail-screen">
@@ -167,6 +172,13 @@ const TripDetail = () => {
           </span>
           <strong>{itemCount}</strong>
           <span>Aktivitas</span>
+        </div>
+        <div>
+          <span className="summary-icon">
+            <Wallet size={16} />
+          </span>
+          <strong className="summary-money">{formatMoney(totalCostEstimate, trip.currency_code)}</strong>
+          <span>Budget</span>
         </div>
         <button
           aria-expanded={showMembers}
@@ -229,7 +241,7 @@ const TripDetail = () => {
             <p className="eyebrow">Timeline</p>
             <h2>Rencana perjalanan</h2>
           </div>
-          <Link className="icon-link" to={`/trips/${trip.id}/days/new`} title="Tambah hari">
+          <Link className="icon-link" state={{ nextDayNumber: days.length > 0 ? Math.max(...days.map(d => d.day_number)) + 1 : 1 }} to={`/trips/${trip.id}/days/new`} title="Tambah hari">
             <Plus size={18} />
           </Link>
         </div>
