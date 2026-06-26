@@ -16,6 +16,7 @@ const DayTimeline = ({ days = [], currency = 'IDR', onDeleteDay, onDeleteItem })
   }
 
   const toggleActions = (e, dayId) => {
+    e.preventDefault()
     e.stopPropagation()
     setExpandedActions(prev => ({
       ...prev,
@@ -40,8 +41,11 @@ const DayTimeline = ({ days = [], currency = 'IDR', onDeleteDay, onDeleteItem })
               >
                 <ChevronDown size={20} />
               </button>
-              <div>
-                <p className="eyebrow">Day {day.day_number}</p>
+              <div className="day-title-content">
+                <div className="day-badge-row">
+                  <span className="day-badge">Day {day.day_number}</span>
+                  {day.title && day.date && <span className="day-date">{formatDate(day.date)}</span>}
+                </div>
                 <h3>{day.title || (day.date ? formatDate(day.date) : 'Rencana hari ini')}</h3>
               </div>
             </div>
