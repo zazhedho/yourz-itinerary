@@ -1,16 +1,10 @@
 import { CalendarDays, MapPin, Plus, UserRound } from 'lucide-react'
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { Link, NavLink, Outlet } from 'react-router-dom'
 
 import { useAuth } from '../../hooks/useAuth'
 
 const AppShell = () => {
-  const { user, logout } = useAuth()
-  const navigate = useNavigate()
-
-  const handleLogout = async () => {
-    await logout()
-    navigate('/login', { replace: true })
-  }
+  const { user } = useAuth()
 
   return (
     <div className="app-shell">
@@ -19,9 +13,9 @@ const AppShell = () => {
           <p className="eyebrow">Yourz Itinerary</p>
           <h1>Trip bersama</h1>
         </div>
-        <button className="avatar-button" onClick={handleLogout} type="button" title="Logout">
+        <Link className="avatar-button" to="/account" title="Akun">
           <UserRound size={20} />
-        </button>
+        </Link>
       </header>
 
       <main className="app-main">

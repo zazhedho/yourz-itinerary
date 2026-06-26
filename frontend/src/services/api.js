@@ -15,11 +15,38 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+let refreshPromise = null
+
+const refreshAccessToken = async () => {
+  const refreshToken = localStorage.getItem('refresh_token')
+  if (!refreshToken) throw new Error('missing refresh token')
+  const response = await axios.post(`${API_BASE_URL}/user/refresh-token`, { refresh_token: refreshToken })
+  const data = response?.data?.data || {}
+  const token = data.access_token || data.token
+  if (!token) throw new Error('missing access token')
+  localStorage.setItem('token', token)
+  if (data.refresh_token) localStorage.setItem('refresh_token', data.refresh_token)
+  return token
+}
+
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token')
+  async (error) => {
+    const original = error.config
+    if (error.response?.status === 401 && !original?._retry) {
+      original._retry = true
+      try {
+        refreshPromise = refreshPromise || refreshAccessToken()
+        const token = await refreshPromise
+        refreshPromise = null
+        original.headers.Authorization = `Bearer ${token}`
+        return api(original)
+      } catch (refreshError) {
+        refreshPromise = null
+        localStorage.removeItem('token')
+        localStorage.removeItem('refresh_token')
+        return Promise.reject(refreshError)
+      }
     }
     return Promise.reject(error)
   },

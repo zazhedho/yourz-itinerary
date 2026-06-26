@@ -1,28 +1,28 @@
 import { useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import ErrorBanner from '../../components/common/ErrorBanner'
 import { getErrorMessage } from '../../services/api'
 import tripMemberService from '../../services/tripMemberService'
-import { buildTripMemberPayload } from '../../utils/payloads'
 
-const TripMemberAdd = () => {
-  const { tripId } = useParams()
+const TripMemberRoleForm = () => {
+  const { tripId, memberId } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
+  const member = location.state?.member
+  const [role, setRole] = useState(member?.role === 'editor' ? 'editor' : 'viewer')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [form, setForm] = useState({ email: '', role: 'viewer' })
 
   const handleSubmit = async (event) => {
     event.preventDefault()
     setSubmitting(true)
     setError('')
     try {
-      const payload = buildTripMemberPayload(form)
-      await tripMemberService.addMember(tripId, payload)
+      await tripMemberService.updateRole(tripId, memberId, { role })
       navigate(`/trips/${tripId}`)
     } catch (err) {
-      setError(getErrorMessage(err, 'Gagal menambahkan member'))
+      setError(getErrorMessage(err, 'Gagal mengubah role member'))
     } finally {
       setSubmitting(false)
     }
@@ -32,34 +32,25 @@ const TripMemberAdd = () => {
     <section className="screen-stack">
       <div className="section-header">
         <div>
-          <p className="eyebrow">Member</p>
-          <h2>Tambah member lewat email</h2>
+          <p className="eyebrow">Member role</p>
+          <h2>Ubah akses member</h2>
         </div>
       </div>
       <form className="form-card" onSubmit={handleSubmit}>
         <ErrorBanner message={error} />
         <label>
-          Email member
-          <input
-            type="email"
-            value={form.email}
-            onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
-            required
-          />
-        </label>
-        <label>
           Role
-          <select value={form.role} onChange={(event) => setForm((current) => ({ ...current, role: event.target.value }))}>
+          <select value={role} onChange={(event) => setRole(event.target.value)}>
             <option value="viewer">Viewer</option>
             <option value="editor">Editor</option>
           </select>
         </label>
         <button className="button-primary" disabled={submitting} type="submit">
-          {submitting ? 'Menambahkan...' : 'Tambah member'}
+          {submitting ? 'Menyimpan...' : 'Simpan role'}
         </button>
       </form>
     </section>
   )
 }
 
-export default TripMemberAdd
+export default TripMemberRoleForm

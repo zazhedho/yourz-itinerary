@@ -4,9 +4,11 @@ import { Link, useNavigate } from 'react-router-dom'
 
 import ErrorBanner from '../../components/common/ErrorBanner'
 import { useAuth } from '../../hooks/useAuth'
+import useRegisterStatus from '../../hooks/useRegisterStatus'
 
 const Login = () => {
   const { login, error } = useAuth()
+  const { enabled: registerEnabled } = useRegisterStatus()
   const navigate = useNavigate()
   const [form, setForm] = useState({ identifier: '', password: '' })
   const [submitting, setSubmitting] = useState(false)
@@ -53,8 +55,13 @@ const Login = () => {
         <button className="button-primary" disabled={submitting} type="submit">
           {submitting ? 'Masuk...' : 'Masuk'}
         </button>
+        {registerEnabled !== false && (
+          <p className="auth-link">
+            Belum punya akun? <Link to="/register">Daftar</Link>
+          </p>
+        )}
         <p className="auth-link">
-          Belum punya akun? <Link to="/register">Daftar</Link>
+          <Link to="/forgot-password">Lupa password?</Link>
         </p>
       </form>
     </main>

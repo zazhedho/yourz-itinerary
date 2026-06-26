@@ -1,16 +1,23 @@
 import { useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import ErrorBanner from '../../components/common/ErrorBanner'
 import itineraryDayService from '../../services/itineraryDayService'
 import { getErrorMessage } from '../../services/api'
+import { buildItineraryDayPayload } from '../../utils/payloads'
 
 const ItineraryDayForm = () => {
   const { tripId, dayId } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
+  const existingDay = location.state?.day
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [form, setForm] = useState({ day_number: 1, title: '', date: '' })
+  const [form, setForm] = useState({
+    day_number: existingDay?.day_number || 1,
+    title: existingDay?.title || '',
+    date: existingDay?.date || '',
+  })
 
   const handleChange = (event) => {
     const value = event.target.name === 'day_number' ? Number(event.target.value) : event.target.value
@@ -22,11 +29,12 @@ const ItineraryDayForm = () => {
     setSubmitting(true)
     setError('')
     try {
+      const payload = buildItineraryDayPayload(form)
       if (dayId) {
-        await itineraryDayService.update(dayId, form)
+        await itineraryDayService.update(dayId, payload)
         navigate(-1)
       } else {
-        await itineraryDayService.create(tripId, form)
+        await itineraryDayService.create(tripId, payload)
         navigate(`/trips/${tripId}`)
       }
     } catch (err) {

@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import ErrorBanner from '../../components/common/ErrorBanner'
 import tripService from '../../services/tripService'
-import { getErrorMessage } from '../../services/api'
+import { getErrorMessage, getResponseData } from '../../services/api'
+import { buildTripPayload } from '../../utils/payloads'
 
 const TripForm = () => {
   const { tripId } = useParams()
@@ -19,6 +20,21 @@ const TripForm = () => {
     currency_code: 'IDR',
   })
 
+  useEffect(() => {
+    if (!tripId) return
+    tripService.getById(tripId).then((response) => {
+      const trip = getResponseData(response)
+      setForm({
+        title: trip.title || '',
+        destination: trip.destination || '',
+        start_date: trip.start_date || '',
+        end_date: trip.end_date || '',
+        timezone: trip.timezone || 'Asia/Jakarta',
+        currency_code: trip.currency_code || 'IDR',
+      })
+    })
+  }, [tripId])
+
   const handleChange = (event) => {
     setForm((current) => ({ ...current, [event.target.name]: event.target.value }))
   }
@@ -28,7 +44,8 @@ const TripForm = () => {
     setSubmitting(true)
     setError('')
     try {
-      const response = tripId ? await tripService.update(tripId, form) : await tripService.create(form)
+      const payload = buildTripPayload(form)
+      const response = tripId ? await tripService.update(tripId, payload) : await tripService.create(payload)
       const id = response?.data?.data?.id || tripId
       navigate(`/trips/${id}`)
     } catch (err) {

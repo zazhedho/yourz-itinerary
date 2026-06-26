@@ -1,36 +1,43 @@
 import { MapPin } from 'lucide-react'
-import { useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { lazy, Suspense, useState } from 'react'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import ErrorBanner from '../../components/common/ErrorBanner'
+import Loading from '../../components/common/Loading'
 import { getErrorMessage } from '../../services/api'
 import itineraryItemService from '../../services/itineraryItemService'
+import { buildItineraryItemPayload } from '../../utils/payloads'
+
+const CoordinatePicker = lazy(() => import('../../components/maps/CoordinatePicker'))
 
 const ItineraryItemForm = () => {
   const { dayId, itemId } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
+  const existingItem = location.state?.item
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [form, setForm] = useState({
-    title: '',
-    description: '',
-    location_name: '',
-    latitude: '',
-    longitude: '',
-    start_time: '',
-    end_time: '',
-    cost_estimate: 0,
+    title: existingItem?.title || '',
+    description: existingItem?.description || '',
+    location_name: existingItem?.location_name || '',
+    latitude: existingItem?.latitude ?? '',
+    longitude: existingItem?.longitude ?? '',
+    start_time: existingItem?.start_time || '',
+    end_time: existingItem?.end_time || '',
+    cost_estimate: existingItem?.cost_estimate || 0,
   })
 
   const handleChange = (event) => {
     setForm((current) => ({ ...current, [event.target.name]: event.target.value }))
   }
 
-  const payload = {
-    ...form,
-    latitude: form.latitude === '' ? null : Number(form.latitude),
-    longitude: form.longitude === '' ? null : Number(form.longitude),
-    cost_estimate: Number(form.cost_estimate || 0),
+  const handleCoordinatePick = ({ latitude, longitude }) => {
+    setForm((current) => ({
+      ...current,
+      latitude: String(latitude),
+      longitude: String(longitude),
+    }))
   }
 
   const handleSubmit = async (event) => {
@@ -38,6 +45,7 @@ const ItineraryItemForm = () => {
     setSubmitting(true)
     setError('')
     try {
+      const payload = buildItineraryItemPayload(form)
       if (itemId) await itineraryItemService.update(itemId, payload)
       else await itineraryItemService.create(dayId, payload)
       navigate(-1)
@@ -76,10 +84,18 @@ const ItineraryItemForm = () => {
             <input name="longitude" type="number" step="0.0000001" value={form.longitude} onChange={handleChange} />
           </label>
         </div>
-        <Link className="button-secondary" to="/map-picker">
-          <MapPin size={17} />
-          Pilih dari map
-        </Link>
+        <div className="map-field">
+          <div className="map-field-header">
+            <span>
+              <MapPin size={17} />
+              Pin lokasi
+            </span>
+            <small>Tap map untuk isi koordinat</small>
+          </div>
+          <Suspense fallback={<Loading label="Memuat map..." />}>
+            <CoordinatePicker latitude={form.latitude} longitude={form.longitude} onPick={handleCoordinatePick} />
+          </Suspense>
+        </div>
         <div className="form-grid">
           <label>
             Mulai

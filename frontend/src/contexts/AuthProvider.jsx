@@ -26,7 +26,9 @@ export const AuthProvider = ({ children }) => {
       const response = await authService.login(payload)
       const data = getResponseData(response) || {}
       const token = data.access_token || data.token
+      const refreshToken = data.refresh_token
       if (token) localStorage.setItem('token', token)
+      if (refreshToken) localStorage.setItem('refresh_token', refreshToken)
       const profile = await authService.me()
       setUser(getResponseData(profile))
       return true
@@ -41,6 +43,7 @@ export const AuthProvider = ({ children }) => {
       await authService.logout()
     } finally {
       localStorage.removeItem('token')
+      localStorage.removeItem('refresh_token')
       setUser(null)
     }
   }
