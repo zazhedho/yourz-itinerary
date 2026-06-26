@@ -12,12 +12,13 @@ const ItineraryDayForm = () => {
   const location = useLocation()
   const existingDay = location.state?.day
   const nextDayNumber = location.state?.nextDayNumber || 1
+  const nextDate = location.state?.nextDate || ''
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [form, setForm] = useState({
     day_number: existingDay?.day_number || nextDayNumber,
     title: existingDay?.title || '',
-    date: existingDay?.date || '',
+    date: existingDay?.date || (existingDay ? '' : nextDate),
   })
 
   const handleChange = (event) => {
@@ -57,7 +58,7 @@ const ItineraryDayForm = () => {
         <ErrorBanner message={error} />
         <label>
           Nomor hari
-          <input min="1" name="day_number" type="number" value={form.day_number} onChange={handleChange} placeholder="Contoh: 1" required />
+          <input min="1" name="day_number" type="number" value={form.day_number} disabled className="disabled-input" />
         </label>
         <label>
           Judul hari (Opsional)

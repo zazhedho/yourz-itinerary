@@ -130,6 +130,15 @@ const TripDetail = () => {
   )
   const totalCostEstimate = trip.total_cost_estimate ?? calculatedCostEstimate
 
+  const getNextDate = () => {
+    if (days.length === 0) return trip.start_date ? trip.start_date.split('T')[0] : ''
+    const validDates = days.filter(d => d.date).map(d => new Date(d.date).getTime())
+    if (validDates.length === 0) return trip.start_date ? trip.start_date.split('T')[0] : ''
+    const nextDate = new Date(Math.max(...validDates))
+    nextDate.setDate(nextDate.getDate() + 1)
+    return nextDate.toISOString().split('T')[0]
+  }
+
   return (
     <section className="screen-stack trip-detail-screen">
       <div 
@@ -241,7 +250,7 @@ const TripDetail = () => {
             <p className="eyebrow">Timeline</p>
             <h2>Rencana perjalanan</h2>
           </div>
-          <Link className="icon-link" state={{ nextDayNumber: days.length > 0 ? Math.max(...days.map(d => d.day_number)) + 1 : 1 }} to={`/trips/${trip.id}/days/new`} title="Tambah hari">
+          <Link className="icon-link" state={{ nextDayNumber: days.length > 0 ? Math.max(...days.map(d => d.day_number)) + 1 : 1, nextDate: getNextDate() }} to={`/trips/${trip.id}/days/new`} title="Tambah hari">
             <Plus size={18} />
           </Link>
         </div>

@@ -380,7 +380,8 @@ func (r *Routes) TripMemberRoutes() {
 func (r *Routes) ItineraryDayRoutes() {
 	mRepo := tripMemberRepo.NewTripMemberRepo(r.DB)
 	dRepo := itineraryDayRepo.NewItineraryDayRepo(r.DB)
-	svc := itineraryDaySvc.NewItineraryDayService(mRepo, dRepo)
+	tRepo := tripRepo.NewTripRepo(r.DB)
+	svc := itineraryDaySvc.NewItineraryDayService(mRepo, dRepo, tRepo)
 	h := itineraryDayHandler.NewItineraryDayHandler(svc)
 	mdw := r.newItineraryAuthMiddleware()
 
