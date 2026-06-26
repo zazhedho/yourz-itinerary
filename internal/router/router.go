@@ -345,7 +345,8 @@ func (r *Routes) TripRoutes() {
 	memberRepo := tripMemberRepo.NewTripMemberRepo(r.DB)
 	dayRepo := itineraryDayRepo.NewItineraryDayRepo(r.DB)
 	itemRepo := itineraryItemRepo.NewItineraryItemRepo(r.DB)
-	svc := tripSvc.NewTripService(repo, memberRepo, dayRepo, itemRepo)
+	uRepo := userRepo.NewUserRepo(r.DB)
+	svc := tripSvc.NewTripService(repo, memberRepo, dayRepo, itemRepo, uRepo)
 	h := tripHandler.NewTripHandler(svc)
 	mdw := r.newItineraryAuthMiddleware()
 

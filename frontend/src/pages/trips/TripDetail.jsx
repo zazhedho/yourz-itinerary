@@ -14,6 +14,10 @@ import tripService from '../../services/tripService'
 import { getErrorMessage, getResponseData } from '../../services/api'
 import { formatDateRange, roleLabel } from '../../utils/formatters'
 
+const shortId = (value = '') => value.slice(0, 8)
+const memberDisplayName = (member) => member.user_name || `User ${shortId(member.user_id)}`
+const memberDisplayMeta = (member) => member.user_email || member.user_id
+
 const TripDetail = () => {
   const { tripId } = useParams()
   const navigate = useNavigate()
@@ -101,67 +105,123 @@ const TripDetail = () => {
   if (loading) return <Loading label="Memuat detail trip..." />
   if (!trip) return <ErrorBanner message={error || 'Trip tidak ditemukan'} />
 
+  const members = trip.members || []
+  const days = trip.days || []
+  const itemCount = days.reduce((total, day) => total + (day.items?.length || 0), 0)
+
   return (
-    <section className="screen-stack">
+    <section className="screen-stack trip-detail-screen">
       <div className="detail-cover">
         <div>
-          <p>{trip.destination || 'Shared trip'}</p>
+          <p className="detail-kicker">{trip.destination || 'Shared itinerary'}</p>
           <h2>{trip.title}</h2>
-          <span>{formatDateRange(trip.start_date, trip.end_date)}</span>
+          <div className="detail-meta-row">
+            <span>{formatDateRange(trip.start_date, trip.end_date)}</span>
+            <span>{trip.currency_code}</span>
+          </div>
         </div>
       </div>
 
-      <div className="quick-actions">
-        <Link to={`/trips/${trip.id}/edit`}>
-          <Edit3 size={17} />
-          Edit
-        </Link>
-        <Link to={`/trips/${trip.id}/members/add`}>
-          <UserPlus size={17} />
-          Member
-        </Link>
-        <Link to={`/trips/${trip.id}/days/new`}>
-          <Plus size={17} />
-          Day
-        </Link>
-        <button aria-label="Keluar dari trip" onClick={handleLeaveTrip} type="button">
-          <LogOut size={17} />
-          Leave
-        </button>
-        <button aria-label="Hapus trip" className="danger-action" onClick={handleDeleteTrip} type="button">
-          <Trash2 size={17} />
-          Delete
-        </button>
+      <div className="trip-summary-grid">
+        <div>
+          <strong>{days.length}</strong>
+          <span>Hari</span>
+        </div>
+        <div>
+          <strong>{itemCount}</strong>
+          <span>Aktivitas</span>
+        </div>
+        <div>
+          <strong>{members.length}</strong>
+          <span>Member</span>
+        </div>
       </div>
 
       <ErrorBanner message={error} />
 
-      <section className="member-strip">
-        {(trip.members || []).map((member) => (
-          <div className="member-chip" key={member.id}>
-            {member.role !== 'owner' ? (
-              <Link state={{ member }} to={`/trips/${trip.id}/members/${member.id}/role`}>
-                <span>{roleLabel(member.role)}</span>
-              </Link>
-            ) : (
-              <span>{roleLabel(member.role)}</span>
-            )}
-            <small>{member.user_id.slice(0, 8)}</small>
-            {member.role !== 'owner' && (
-              <button onClick={() => handleRemoveMember(member)} type="button" title="Hapus member">
-                <UserMinus size={13} />
-              </button>
-            )}
-          </div>
-        ))}
+      <section className="action-panel" aria-label="Trip actions">
+        <Link className="action-tile" to={`/trips/${trip.id}/edit`}>
+          <Edit3 size={18} />
+          <span>Edit trip</span>
+        </Link>
+        <Link className="action-tile" to={`/trips/${trip.id}/members/add`}>
+          <UserPlus size={18} />
+          <span>Tambah member</span>
+        </Link>
+        <Link className="action-tile primary" to={`/trips/${trip.id}/days/new`}>
+          <Plus size={19} />
+          <span>Tambah hari</span>
+        </Link>
       </section>
 
-      <DayTimeline
-        currency={trip.currency_code}
-        days={trip.days || []}
-        onDeleteDay={handleDeleteDay}
-        onDeleteItem={handleDeleteItem}
-      />
+      <section className="content-section">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">Members</p>
+            <h2>Akses itinerary</h2>
+          </div>
+          <Link className="icon-link" to={`/trips/${trip.id}/members/add`} title="Tambah member">
+            <UserPlus size={16} />
+          </Link>
+        </div>
+        <div className="member-list">
+          {members.map((member) => (
+            <article className="member-row" key={member.id}>
+              <div className="member-avatar">
+                {member.avatar_url ? <img alt="" src={member.avatar_url} /> : memberDisplayName(member).charAt(0)}
+              </div>
+              <div>
+                <strong>{memberDisplayName(member)}</strong>
+                <span>{memberDisplayMeta(member)}</span>
+                <small>{roleLabel(member.role)}</small>
+              </div>
+              {member.role !== 'owner' && (
+                <div className="member-actions">
+                  <Link state={{ member }} to={`/trips/${trip.id}/members/${member.id}/role`}>
+                    Edit role
+                  </Link>
+                  <button onClick={() => handleRemoveMember(member)} type="button" title="Hapus member">
+                    <UserMinus size={14} />
+                  </button>
+                </div>
+              )}
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="content-section">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">Timeline</p>
+            <h2>Rencana perjalanan</h2>
+          </div>
+          <Link className="icon-link" to={`/trips/${trip.id}/days/new`} title="Tambah hari">
+            <Plus size={18} />
+          </Link>
+        </div>
+        <DayTimeline
+          currency={trip.currency_code}
+          days={days}
+          onDeleteDay={handleDeleteDay}
+          onDeleteItem={handleDeleteItem}
+        />
+      </section>
+
+      <section className="danger-zone">
+        <div>
+          <p className="eyebrow">Danger zone</p>
+          <h2>Aksi trip</h2>
+        </div>
+        <button aria-label="Keluar dari trip" onClick={handleLeaveTrip} type="button">
+          <LogOut size={17} />
+          Keluar
+        </button>
+        <button aria-label="Hapus trip" onClick={handleDeleteTrip} type="button">
+          <Trash2 size={17} />
+          Hapus
+        </button>
+      </section>
       <ConfirmDialog {...dialogProps} />
     </section>
   )

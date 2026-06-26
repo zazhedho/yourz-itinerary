@@ -21,7 +21,7 @@ func NewItineraryDayRepo(db *gorm.DB) interfaceitineraryday.RepoItineraryDayInte
 
 func (r *repo) ListByTrip(ctx context.Context, tripId string) ([]domainitineraryday.ItineraryDay, error) {
 	var days []domainitineraryday.ItineraryDay
-	err := r.DB.WithContext(ctx).Where("trip_id = ?", tripId).Find(&days).Error
+	err := r.DB.WithContext(ctx).Where("trip_id = ?", tripId).Order("day_number ASC").Find(&days).Error
 	return days, err
 }
 

@@ -36,11 +36,21 @@ const TripForm = () => {
   }, [tripId])
 
   const handleChange = (event) => {
-    setForm((current) => ({ ...current, [event.target.name]: event.target.value }))
+    const { name, value } = event.target
+    setForm((current) => {
+      if (name === 'start_date' && current.end_date && value && current.end_date < value) {
+        return { ...current, start_date: value, end_date: value }
+      }
+      return { ...current, [name]: value }
+    })
   }
 
   const handleSubmit = async (event) => {
     event.preventDefault()
+    if (form.start_date && form.end_date && form.end_date < form.start_date) {
+      setError('Tanggal selesai tidak boleh lebih kecil dari tanggal mulai')
+      return
+    }
     setSubmitting(true)
     setError('')
     try {
@@ -80,7 +90,13 @@ const TripForm = () => {
           </label>
           <label>
             Selesai
-            <input name="end_date" type="date" value={form.end_date} onChange={handleChange} />
+            <input
+              min={form.start_date || undefined}
+              name="end_date"
+              type="date"
+              value={form.end_date}
+              onChange={handleChange}
+            />
           </label>
         </div>
         <button className="button-primary" disabled={submitting} type="submit">

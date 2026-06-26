@@ -9,11 +9,13 @@ import (
 	domainitineraryitem "yourz-itinerary/internal/domain/itineraryitem"
 	domaintrip "yourz-itinerary/internal/domain/trip"
 	domaintripmember "yourz-itinerary/internal/domain/tripmember"
+	domainuser "yourz-itinerary/internal/domain/user"
 	"yourz-itinerary/internal/dto"
 	interfaceitineraryday "yourz-itinerary/internal/interfaces/itineraryday"
 	interfaceitineraryitem "yourz-itinerary/internal/interfaces/itineraryitem"
 	interfacetrip "yourz-itinerary/internal/interfaces/trip"
 	interfacetripmember "yourz-itinerary/internal/interfaces/tripmember"
+	interfaceuser "yourz-itinerary/internal/interfaces/user"
 	serviceshared "yourz-itinerary/internal/services/shared"
 	"yourz-itinerary/utils"
 )
@@ -23,6 +25,7 @@ type TripService struct {
 	memberRepo interfacetripmember.RepoTripMemberInterface
 	dayRepo    interfaceitineraryday.RepoItineraryDayInterface
 	itemRepo   interfaceitineraryitem.RepoItineraryItemInterface
+	userRepo   interfaceuser.RepoUserInterface
 }
 
 func NewTripService(
@@ -30,8 +33,9 @@ func NewTripService(
 	memberRepo interfacetripmember.RepoTripMemberInterface,
 	dayRepo interfaceitineraryday.RepoItineraryDayInterface,
 	itemRepo interfaceitineraryitem.RepoItineraryItemInterface,
+	userRepo interfaceuser.RepoUserInterface,
 ) *TripService {
-	return &TripService{tripRepo: tripRepo, memberRepo: memberRepo, dayRepo: dayRepo, itemRepo: itemRepo}
+	return &TripService{tripRepo: tripRepo, memberRepo: memberRepo, dayRepo: dayRepo, itemRepo: itemRepo, userRepo: userRepo}
 }
 
 func (s *TripService) CreateTrip(ctx context.Context, userId string, req dto.CreateTripRequest) (dto.TripDetailResponse, error) {
@@ -99,12 +103,13 @@ func (s *TripService) CreateTrip(ctx context.Context, userId string, req dto.Cre
 		CreatedAt: now,
 	}
 
-	createdTrip, err := s.tripRepo.CreateTrip(ctx, trip, member)
+	daySyncPlan := buildItineraryDaySyncPlan(trip, userId, now, nil)
+	createdTrip, err := s.tripRepo.CreateTrip(ctx, trip, member, daySyncPlan.Create...)
 	if err != nil {
 		return dto.TripDetailResponse{}, err
 	}
 
-	return tripToDetail(createdTrip, []domaintripmember.TripMember{member}, nil, nil), nil
+	return tripToDetail(createdTrip, []domaintripmember.TripMember{member}, s.loadUsersByID(ctx, []domaintripmember.TripMember{member}), daySyncPlan.Create, nil), nil
 }
 
 func (s *TripService) GetTripDetail(ctx context.Context, userId, tripId string) (dto.TripDetailResponse, error) {
@@ -123,7 +128,7 @@ func (s *TripService) GetTripDetail(ctx context.Context, userId, tripId string) 
 		return dto.TripDetailResponse{}, err
 	}
 
-	return tripToDetail(trip, members, days, itemsByDay), nil
+	return tripToDetail(trip, members, s.loadUsersByID(ctx, members), days, itemsByDay), nil
 }
 
 func (s *TripService) ListTrips(ctx context.Context, userId string) ([]dto.TripListResponse, error) {
@@ -211,8 +216,30 @@ func (s *TripService) UpdateTrip(ctx context.Context, userId, tripId string, req
 	if err != nil {
 		return dto.TripDetailResponse{}, err
 	}
+	daySyncPlan := buildItineraryDaySyncPlan(trip, userId, time.Now(), days)
+	for _, day := range daySyncPlan.Update {
+		if err := s.dayRepo.Update(ctx, day); err != nil {
+			return dto.TripDetailResponse{}, err
+		}
+	}
+	for _, day := range daySyncPlan.Create {
+		if err := s.dayRepo.Store(ctx, day); err != nil {
+			return dto.TripDetailResponse{}, err
+		}
+	}
+	for _, day := range daySyncPlan.Delete {
+		if err := s.dayRepo.SoftDelete(ctx, day.Id, userId); err != nil {
+			return dto.TripDetailResponse{}, err
+		}
+	}
+	if len(daySyncPlan.Update) > 0 || len(daySyncPlan.Create) > 0 || len(daySyncPlan.Delete) > 0 {
+		members, days, itemsByDay, err = s.loadTripRelations(ctx, tripId)
+		if err != nil {
+			return dto.TripDetailResponse{}, err
+		}
+	}
 
-	return tripToDetail(trip, members, days, itemsByDay), nil
+	return tripToDetail(trip, members, s.loadUsersByID(ctx, members), days, itemsByDay), nil
 }
 
 func (s *TripService) DeleteTrip(ctx context.Context, userId, tripId string) error {
@@ -249,4 +276,24 @@ func (s *TripService) loadTripRelations(ctx context.Context, tripId string) ([]d
 	}
 
 	return members, days, itemsByDay, nil
+}
+
+func (s *TripService) loadUsersByID(ctx context.Context, members []domaintripmember.TripMember) map[string]domainuser.Users {
+	usersByID := make(map[string]domainuser.Users, len(members))
+	if s.userRepo == nil {
+		return usersByID
+	}
+	for _, member := range members {
+		if member.UserId == "" {
+			continue
+		}
+		if _, exists := usersByID[member.UserId]; exists {
+			continue
+		}
+		user, err := s.userRepo.GetByID(ctx, member.UserId)
+		if err == nil && user.Id != "" {
+			usersByID[member.UserId] = user
+		}
+	}
+	return usersByID
 }

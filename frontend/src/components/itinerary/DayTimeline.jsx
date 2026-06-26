@@ -34,31 +34,38 @@ const DayTimeline = ({ days = [], currency = 'IDR', onDeleteDay, onDeleteItem })
           </div>
 
           <div className="item-list">
-            {(day.items || []).map((item) => (
-              <article className="item-row" key={item.id}>
-                <div className="item-time">{item.start_time || '--:--'}</div>
-                <div className="item-content">
-                  <div className="item-title-row">
-                    <h4>{item.title}</h4>
-                    <div className="inline-actions compact">
-                      <Link className="icon-link" state={{ item }} to={`/itinerary-items/${item.id}/edit`} title="Edit aktivitas">
-                        <Pencil size={14} />
-                      </Link>
-                      <button aria-label="Hapus aktivitas" className="icon-link danger" onClick={() => onDeleteItem?.(item)} type="button" title="Hapus aktivitas">
-                        <Trash2 size={14} />
-                      </button>
+            {(day.items || []).length ? (
+              (day.items || []).map((item) => (
+                <article className="item-row" key={item.id}>
+                  <div className="item-time">{item.start_time || '--:--'}</div>
+                  <div className="item-content">
+                    <div className="item-title-row">
+                      <h4>{item.title}</h4>
+                      <div className="inline-actions compact">
+                        <Link className="icon-link" state={{ item }} to={`/itinerary-items/${item.id}/edit`} title="Edit aktivitas">
+                          <Pencil size={14} />
+                        </Link>
+                        <button aria-label="Hapus aktivitas" className="icon-link danger" onClick={() => onDeleteItem?.(item)} type="button" title="Hapus aktivitas">
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     </div>
+                    {item.location_name && (
+                      <p>
+                        <MapPin size={13} />
+                        {item.location_name}
+                      </p>
+                    )}
+                    <span>{formatMoney(item.cost_estimate, currency)}</span>
                   </div>
-                  {item.location_name && (
-                    <p>
-                      <MapPin size={13} />
-                      {item.location_name}
-                    </p>
-                  )}
-                  <span>{formatMoney(item.cost_estimate, currency)}</span>
-                </div>
-              </article>
-            ))}
+                </article>
+              ))
+            ) : (
+              <div className="day-empty-state">
+                <span>Belum ada aktivitas di hari ini.</span>
+                <Link to={`/itinerary-days/${day.id}/items/new`}>Tambah aktivitas</Link>
+              </div>
+            )}
           </div>
         </section>
       ))}

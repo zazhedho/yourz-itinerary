@@ -1,5 +1,5 @@
-import { CalendarDays, MapPin, Plus, UserRound } from 'lucide-react'
-import { Link, NavLink, Outlet } from 'react-router-dom'
+import { CalendarDays, Plus, UserRound } from 'lucide-react'
+import { NavLink, Outlet } from 'react-router-dom'
 
 import { useAuth } from '../../hooks/useAuth'
 
@@ -13,9 +13,6 @@ const AppShell = () => {
           <p className="eyebrow">Yourz Itinerary</p>
           <h1>Trip bersama</h1>
         </div>
-        <Link className="avatar-button" to="/account" title="Akun">
-          <UserRound size={20} />
-        </Link>
       </header>
 
       <main className="app-main">
@@ -31,9 +28,9 @@ const AppShell = () => {
           <Plus size={22} />
           <span>Buat</span>
         </NavLink>
-        <NavLink end to="/map-picker">
-          <MapPin size={20} />
-          <span>Map</span>
+        <NavLink end to="/account">
+          <UserRound size={20} />
+          <span>Akun</span>
         </NavLink>
       </nav>
     </div>

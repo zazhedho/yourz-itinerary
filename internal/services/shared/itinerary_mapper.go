@@ -6,6 +6,7 @@ import (
 	domainitineraryday "yourz-itinerary/internal/domain/itineraryday"
 	domainitineraryitem "yourz-itinerary/internal/domain/itineraryitem"
 	domaintripmember "yourz-itinerary/internal/domain/tripmember"
+	domainuser "yourz-itinerary/internal/domain/user"
 	"yourz-itinerary/internal/dto"
 )
 
@@ -30,6 +31,14 @@ func TripMemberToResponse(m domaintripmember.TripMember) dto.TripMemberResponse 
 		mr.DeletedAt = new(m.DeletedAt.Time.Format(time.RFC3339))
 	}
 
+	return mr
+}
+
+func TripMemberToResponseWithUser(m domaintripmember.TripMember, user domainuser.Users) dto.TripMemberResponse {
+	mr := TripMemberToResponse(m)
+	mr.UserName = user.Name
+	mr.UserEmail = user.Email
+	mr.AvatarURL = user.AvatarURL
 	return mr
 }
 

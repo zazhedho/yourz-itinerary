@@ -3,6 +3,7 @@ package repositorytrip
 import (
 	"context"
 
+	domainitineraryday "yourz-itinerary/internal/domain/itineraryday"
 	domaintrip "yourz-itinerary/internal/domain/trip"
 	domaintripmember "yourz-itinerary/internal/domain/tripmember"
 	interfacetrip "yourz-itinerary/internal/interfaces/trip"
@@ -20,7 +21,7 @@ func NewTripRepo(db *gorm.DB) interfacetrip.RepoTripInterface {
 	return &repo{GenericRepository: repositorygeneric.New[domaintrip.Trip](db)}
 }
 
-func (r *repo) CreateTrip(ctx context.Context, trip domaintrip.Trip, member domaintripmember.TripMember) (domaintrip.Trip, error) {
+func (r *repo) CreateTrip(ctx context.Context, trip domaintrip.Trip, member domaintripmember.TripMember, days ...domainitineraryday.ItineraryDay) (domaintrip.Trip, error) {
 	err := r.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(&trip).Error; err != nil {
 			return err
@@ -28,6 +29,14 @@ func (r *repo) CreateTrip(ctx context.Context, trip domaintrip.Trip, member doma
 		member.TripId = trip.Id
 		if err := tx.Create(&member).Error; err != nil {
 			return err
+		}
+		for i := range days {
+			days[i].TripId = trip.Id
+		}
+		if len(days) > 0 {
+			if err := tx.Create(&days).Error; err != nil {
+				return err
+			}
 		}
 		return nil
 	})

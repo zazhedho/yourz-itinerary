@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -14,29 +14,31 @@ const renderShell = (initialPath) => render(
       <Route element={<AppShell />}>
         <Route path="/trips" element={<div>Trips page</div>} />
         <Route path="/trips/new" element={<div>New trip page</div>} />
-        <Route path="/map-picker" element={<div>Map page</div>} />
+        <Route path="/account" element={<div>Account page</div>} />
       </Route>
     </Routes>
   </MemoryRouter>,
 )
 
 describe('AppShell', () => {
-  it('keeps Trips and Map as separate navigation targets', () => {
+  it('keeps Trips and Account as separate navigation targets', () => {
     renderShell('/trips')
 
-    const trips = screen.getByRole('link', { name: /trips/i })
-    const map = screen.getByRole('link', { name: /map/i })
+    const nav = within(screen.getByRole('navigation', { name: /primary/i }))
+    const trips = nav.getByRole('link', { name: /trips/i })
+    const account = nav.getByRole('link', { name: /akun/i })
 
     expect(trips).toHaveAttribute('href', '/trips')
-    expect(map).toHaveAttribute('href', '/map-picker')
+    expect(account).toHaveAttribute('href', '/account')
     expect(trips).toHaveClass('active')
-    expect(map).not.toHaveClass('active')
+    expect(account).not.toHaveClass('active')
   })
 
-  it('marks only Map active on the map page', () => {
-    renderShell('/map-picker')
+  it('marks only Account active on the account page', () => {
+    renderShell('/account')
 
-    expect(screen.getByRole('link', { name: /trips/i })).not.toHaveClass('active')
-    expect(screen.getByRole('link', { name: /map/i })).toHaveClass('active')
+    const nav = within(screen.getByRole('navigation', { name: /primary/i }))
+    expect(nav.getByRole('link', { name: /trips/i })).not.toHaveClass('active')
+    expect(nav.getByRole('link', { name: /akun/i })).toHaveClass('active')
   })
 })

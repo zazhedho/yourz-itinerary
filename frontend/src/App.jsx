@@ -21,7 +21,6 @@ const ItineraryDayForm = lazy(() => import('./pages/itinerarydays/ItineraryDayFo
 const ItineraryItemForm = lazy(() => import('./pages/itineraryitems/ItineraryItemForm'))
 const ItineraryItemReorder = lazy(() => import('./pages/itineraryitems/ItineraryItemReorder'))
 const TripMemberRoleForm = lazy(() => import('./pages/tripmembers/TripMemberRoleForm'))
-const MapPicker = lazy(() => import('./pages/itineraryitems/MapPicker'))
 
 const App = () => (
   <Suspense fallback={<Loading />}>
@@ -50,7 +49,6 @@ const App = () => (
           <Route path="/itinerary-days/:dayId/items/new" element={<ItineraryItemForm />} />
           <Route path="/itinerary-days/:dayId/items/reorder" element={<ItineraryItemReorder />} />
           <Route path="/itinerary-items/:itemId/edit" element={<ItineraryItemForm />} />
-          <Route path="/map-picker" element={<MapPicker />} />
         </Route>
       </Route>
 
