@@ -68,6 +68,8 @@ textarea {
   position: relative;
   display: flex;
   align-items: center;
+  width: 100%;
+  min-width: 0;
 }
 
 .date-input-wrapper .date-input-icon {
@@ -79,6 +81,24 @@ textarea {
 
 .date-input-wrapper input {
   padding-right: 40px; /* Make room for the icon */
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+}
+
+.date-placeholder {
+  position: absolute;
+  left: 12px;
+  color: var(--color-muted);
+  pointer-events: none;
+  font-size: 13px;
+  letter-spacing: -0.2px;
+  white-space: nowrap;
+}
+
+/* Hide native date picker text if it's empty to prevent overlap with our placeholder */
+.date-input-wrapper input.empty-date {
+  color: transparent;
 }
 
 /* Hide native date picker icon and make it fill the input for easy tapping */

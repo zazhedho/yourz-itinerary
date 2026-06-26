@@ -84,39 +84,34 @@ const TripForm = () => {
           Destinasi
           <input name="destination" value={form.destination} onChange={handleChange} placeholder="Contoh: Bali, Indonesia" />
         </label>
-        <div className="form-grid">
+        <div className="date-range-row">
           <label>
             Mulai
             <div className="date-input-wrapper">
               <Calendar className="date-input-icon" size={16} />
+              {!form.start_date && <span className="date-placeholder">dd/mm/yyyy</span>}
               <input 
                 name="start_date" 
-                type={form.start_date ? 'date' : 'text'} 
-                onFocus={(e) => (e.target.type = 'date')}
-                onBlur={(e) => {
-                  if (!e.target.value) e.target.type = 'text'
-                }}
+                type="date"
+                className={!form.start_date ? 'empty-date' : ''}
                 value={form.start_date} 
                 onChange={handleChange} 
-                placeholder="dd/mm/yyyy"
               />
             </div>
           </label>
+          <span className="date-separator">-</span>
           <label>
             Selesai
             <div className="date-input-wrapper">
               <Calendar className="date-input-icon" size={16} />
+              {!form.end_date && <span className="date-placeholder">dd/mm/yyyy</span>}
               <input
                 min={form.start_date || undefined}
                 name="end_date"
-                type={form.end_date ? 'date' : 'text'}
-                onFocus={(e) => (e.target.type = 'date')}
-                onBlur={(e) => {
-                  if (!e.target.value) e.target.type = 'text'
-                }}
+                type="date"
+                className={!form.end_date ? 'empty-date' : ''}
                 value={form.end_date}
                 onChange={handleChange}
-                placeholder="dd/mm/yyyy"
               />
             </div>
           </label>
