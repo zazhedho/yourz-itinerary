@@ -10,8 +10,8 @@ const AppShell = () => {
     <div className="app-shell">
       <header className="mobile-header">
         <div>
-          <p className="eyebrow">Yourz Itinerary</p>
-          <h1>Trip bersama</h1>
+          <p className="eyebrow">Siap berangkat?</p>
+          <h1>Petualanganmu</h1>
         </div>
       </header>
 
