@@ -36,7 +36,8 @@ func TestErrorHelpersHideInternalDetails(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected response.Errors, got %#v", got.Error)
 	}
-	if errBody.Code != http.StatusInternalServerError || errBody.Message != "Something went wrong. Please contact support with the log ID." {
+	expectedInternalMessage := "Something went wrong. Please contact support with log ID: " + logID.String() + "."
+	if errBody.Code != http.StatusInternalServerError || errBody.Message != expectedInternalMessage {
 		t.Fatalf("unexpected error body: %+v", errBody)
 	}
 	if got.Message != "Something went wrong" {

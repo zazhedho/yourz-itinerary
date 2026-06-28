@@ -29,11 +29,13 @@ import (
 )
 
 type userServiceTestDouble struct {
-	user        domainuser.Users
-	err         error
-	googleErr   error
-	loginErr    error
-	logoutToken string
+	user           domainuser.Users
+	err            error
+	googleErr      error
+	loginErr       error
+	emailLookupErr error
+	phoneLookupErr error
+	logoutToken    string
 }
 
 func (s *userServiceTestDouble) RegisterUser(ctx context.Context, req dto.UserRegister) (domainuser.Users, error) {
@@ -97,6 +99,9 @@ func (s *userServiceTestDouble) GetUserById(ctx context.Context, id string) (dom
 	return s.user, nil
 }
 func (s *userServiceTestDouble) GetUserByEmail(ctx context.Context, email string) (domainuser.Users, error) {
+	if s.emailLookupErr != nil {
+		return domainuser.Users{}, s.emailLookupErr
+	}
 	if s.err != nil {
 		return domainuser.Users{}, s.err
 	}
@@ -106,10 +111,16 @@ func (s *userServiceTestDouble) GetUserByEmail(ctx context.Context, email string
 	return domainuser.Users{}, nil
 }
 func (s *userServiceTestDouble) GetUserByPhone(ctx context.Context, phone string) (domainuser.Users, error) {
+	if s.phoneLookupErr != nil {
+		return domainuser.Users{}, s.phoneLookupErr
+	}
 	if s.err != nil {
 		return domainuser.Users{}, s.err
 	}
-	return s.user, nil
+	if s.user.Phone == phone {
+		return s.user, nil
+	}
+	return domainuser.Users{}, nil
 }
 func (s *userServiceTestDouble) GetUserByAuth(ctx context.Context, id string) (map[string]interface{}, error) {
 	if s.err != nil {
@@ -829,6 +840,69 @@ func TestUserHandlerOTPErrorBranches(t *testing.T) {
 	ctx, rec = newUserHandlerTestContext(t, http.MethodPost, "/register/otp/send", `{"email":"new@example.com"}`, nil)
 	handler.SendRegisterOTP(ctx)
 	assertUserHandlerStatus(t, rec, http.StatusInternalServerError)
+}
+
+func TestUserHandlerSendRegisterOTPRejectsExistingPhone(t *testing.T) {
+	handler := newUserHandlerForTest()
+	handler.AppConfigService = &appConfigServiceUserTestDouble{enabled: true}
+	otpService := &otpServiceUserHandlerTestDouble{}
+	handler.OTPService = otpService
+
+	ctx, rec := newUserHandlerTestContext(t, http.MethodPost, "/register/otp/send", `{"email":"new@example.com","phone":"08123456789"}`, nil)
+	handler.SendRegisterOTP(ctx)
+
+	assertUserHandlerStatus(t, rec, http.StatusBadRequest)
+	if otpService.sentEmail != "" {
+		t.Fatalf("expected OTP not sent, got sentEmail=%s", otpService.sentEmail)
+	}
+	if !strings.Contains(rec.Body.String(), "phone number already exists") {
+		t.Fatalf("expected duplicate phone message, got %s", rec.Body.String())
+	}
+}
+
+func TestUserHandlerSendRegisterOTPStopsOnLookupErrors(t *testing.T) {
+	t.Run("email lookup error", func(t *testing.T) {
+		handler := newUserHandlerForTest()
+		handler.Service = &userServiceTestDouble{emailLookupErr: errors.New("db down")}
+		handler.AppConfigService = &appConfigServiceUserTestDouble{enabled: true}
+		handler.OTPService = &otpServiceUserHandlerTestDouble{}
+
+		ctx, rec := newUserHandlerTestContext(t, http.MethodPost, "/register/otp/send", `{"email":"new@example.com","phone":"08123456789"}`, nil)
+		handler.SendRegisterOTP(ctx)
+
+		assertUserHandlerStatus(t, rec, http.StatusInternalServerError)
+	})
+
+	t.Run("phone lookup error", func(t *testing.T) {
+		handler := newUserHandlerForTest()
+		handler.Service = &userServiceTestDouble{phoneLookupErr: errors.New("db down")}
+		handler.AppConfigService = &appConfigServiceUserTestDouble{enabled: true}
+		handler.OTPService = &otpServiceUserHandlerTestDouble{}
+
+		ctx, rec := newUserHandlerTestContext(t, http.MethodPost, "/register/otp/send", `{"email":"new@example.com","phone":"08123456789"}`, nil)
+		handler.SendRegisterOTP(ctx)
+
+		assertUserHandlerStatus(t, rec, http.StatusInternalServerError)
+	})
+}
+
+func TestUserHandlerSendRegisterOTPAllowsRecordNotFoundLookups(t *testing.T) {
+	handler := newUserHandlerForTest()
+	handler.Service = &userServiceTestDouble{
+		emailLookupErr: gorm.ErrRecordNotFound,
+		phoneLookupErr: gorm.ErrRecordNotFound,
+	}
+	handler.AppConfigService = &appConfigServiceUserTestDouble{enabled: true}
+	otpService := &otpServiceUserHandlerTestDouble{}
+	handler.OTPService = otpService
+
+	ctx, rec := newUserHandlerTestContext(t, http.MethodPost, "/register/otp/send", `{"email":"new@example.com","phone":"08123456789"}`, nil)
+	handler.SendRegisterOTP(ctx)
+
+	assertUserHandlerStatus(t, rec, http.StatusOK)
+	if otpService.sentEmail != "new@example.com" {
+		t.Fatalf("expected OTP sent to new@example.com, got %s", otpService.sentEmail)
+	}
 }
 
 func TestUserHandlerNotFoundAndValidationErrorBranches(t *testing.T) {

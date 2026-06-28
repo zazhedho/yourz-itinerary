@@ -1,4 +1,4 @@
-import { MapPin } from 'lucide-react'
+import { LockKeyhole, MapPin } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
@@ -35,16 +35,31 @@ const Login = () => {
   }
 
   return (
-    <main className="auth-screen">
+    <main className="auth-screen auth-screen-login">
       <section className="auth-hero">
         <div className="brand-mark">
           <MapPin size={24} />
         </div>
+        <p className="auth-kicker">Yourz Itinerary</p>
         <h1>Rencanakan trip bersama.</h1>
         <p>Masuk untuk melihat itinerary, anggota, aktivitas, dan pin lokasi dalam satu tempat.</p>
+        <div className="auth-hero-pills" aria-hidden="true">
+          <span>Trips</span>
+          <span>Timeline</span>
+          <span>Maps</span>
+        </div>
       </section>
 
       <form className="auth-card" onSubmit={handleSubmit}>
+        <div className="auth-card-header">
+          <div className="auth-card-icon">
+            <LockKeyhole size={20} />
+          </div>
+          <div>
+            <p className="auth-kicker">Masuk</p>
+            <h2>Selamat datang kembali</h2>
+          </div>
+        </div>
         <ErrorBanner message={error || googleError} />
         {googleClientId && (
           <GoogleIdentityButton
@@ -55,36 +70,42 @@ const Login = () => {
             text="signin_with"
           />
         )}
-        <label>
-          Email atau username
-          <input
-            autoComplete="username"
-            value={form.identifier}
-            onChange={(event) => setForm((current) => ({ ...current, identifier: event.target.value }))}
-            required
-          />
-        </label>
-        <label>
-          Password
-          <input
-            autoComplete="current-password"
-            type="password"
-            value={form.password}
-            onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
-            required
-          />
-        </label>
+        <div className="auth-fields">
+          <label>
+            Email atau username
+            <input
+              autoComplete="username"
+              placeholder="email@domain.com"
+              value={form.identifier}
+              onChange={(event) => setForm((current) => ({ ...current, identifier: event.target.value }))}
+              required
+            />
+          </label>
+          <label>
+            Password
+            <input
+              autoComplete="current-password"
+              placeholder="Password"
+              type="password"
+              value={form.password}
+              onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
+              required
+            />
+          </label>
+        </div>
         <button className="button-primary" disabled={submitting} type="submit">
           {submitting ? 'Masuk...' : 'Masuk'}
         </button>
-        {registerEnabled !== false && (
+        <div className="auth-meta-row">
+          {registerEnabled !== false && (
+            <p className="auth-link">
+              Belum punya akun? <Link to="/register">Daftar</Link>
+            </p>
+          )}
           <p className="auth-link">
-            Belum punya akun? <Link to="/register">Daftar</Link>
+            <Link to="/forgot-password">Lupa password?</Link>
           </p>
-        )}
-        <p className="auth-link">
-          <Link to="/forgot-password">Lupa password?</Link>
-        </p>
+        </div>
       </form>
     </main>
   )

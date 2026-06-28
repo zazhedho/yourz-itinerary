@@ -38,6 +38,7 @@ const renderRegister = () => render(<Register />, { wrapper: MemoryRouter })
 describe('Register', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    sessionStorage.clear()
     mocks.googleClientId = 'google-client-id'
     mocks.googleLogin.mockResolvedValue(true)
     authService.getRegisterStatus.mockResolvedValue({
@@ -67,6 +68,26 @@ describe('Register', () => {
     }))
     expect(authService.register).not.toHaveBeenCalled()
     expect(await screen.findByLabelText(/kode otp/i)).toBeInTheDocument()
+  })
+
+  it('keeps OTP input numeric and limited to six digits', async () => {
+    const user = userEvent.setup()
+    sessionStorage.setItem('register_otp_step', 'true')
+    sessionStorage.setItem('register_form', JSON.stringify({
+      name: 'Zaqi',
+      email: 'zaqi@example.com',
+      phone: '628123456789',
+      password: 'Password123!',
+      confirm_password: 'Password123!',
+      otp_code: '',
+    }))
+
+    renderRegister()
+
+    const otpInput = await screen.findByLabelText(/kode otp/i)
+    await user.type(otpInput, '12ab345678')
+
+    expect(otpInput).toHaveValue('123456')
   })
 
   it('blocks OTP request when password requirements are not met', async () => {
@@ -101,5 +122,35 @@ describe('Register', () => {
 
     await screen.findByLabelText(/nama/i)
     expect(screen.queryByRole('button', { name: /daftar dengan google/i })).not.toBeInTheDocument()
+  })
+
+  it('moves to OTP step when backend requires otp_code despite stale status', async () => {
+    const user = userEvent.setup()
+    authService.getRegisterStatus.mockResolvedValue({
+      data: { data: { enabled: true, otp_enabled: false, otp_cooldown: 60 } },
+    })
+    authService.register.mockRejectedValue({
+      response: {
+        data: {
+          error: { message: 'otp_code is required' },
+        },
+      },
+    })
+
+    renderRegister()
+
+    await screen.findByLabelText(/nama/i)
+    await user.type(screen.getByLabelText(/nama/i), 'Zaqi')
+    await user.type(screen.getByLabelText(/email/i), 'zaqi@example.com')
+    await user.type(screen.getByLabelText(/nomor hp/i), '628123456789')
+    await user.type(screen.getByLabelText(/^password$/i), 'Password123!')
+    await user.type(screen.getByLabelText(/konfirmasi password/i), 'Password123!')
+    await user.click(screen.getByRole('button', { name: /^daftar$/i }))
+
+    await waitFor(() => expect(authService.sendRegisterOTP).toHaveBeenCalledWith({
+      email: 'zaqi@example.com',
+      phone: '628123456789',
+    }))
+    expect(await screen.findByLabelText(/kode otp/i)).toBeInTheDocument()
   })
 })

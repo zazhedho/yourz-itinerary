@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { KeyRound, ShieldAlert } from 'lucide-react'
 
 import ErrorBanner from '../../components/common/ErrorBanner'
 import { getErrorMessage } from '../../services/api'
@@ -27,24 +28,53 @@ const ForgotPassword = () => {
   }
 
   return (
-    <main className="auth-screen">
-      <section className="auth-card">
-        <h1>Lupa password</h1>
+    <main className="auth-screen auth-screen-login">
+      <section className="auth-hero">
+        <div className="brand-mark">
+          <ShieldAlert size={24} />
+        </div>
+        <p className="auth-kicker">Pemulihan Akun</p>
+        <h1>Lupa Kata Sandi?</h1>
+        <p>Jangan panik! Cukup masukkan alamat email Anda, dan kami akan segera mengirimkan tautan ajaib untuk mengatur ulang kata sandi Anda.</p>
+      </section>
+
+      <form className="auth-card" onSubmit={handleSubmit}>
+        <div className="auth-card-header">
+          <div className="auth-card-icon">
+            <KeyRound size={20} />
+          </div>
+          <div>
+            <p className="auth-kicker">Lupa Password</p>
+            <h2>Atur ulang sandi</h2>
+          </div>
+        </div>
+
         <ErrorBanner message={error} />
         {message && <div className="success-banner">{message}</div>}
-        <form className="form-inner" onSubmit={handleSubmit}>
+        
+        <div className="auth-fields">
           <label>
-            Email
-            <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
+            Alamat Email
+            <input 
+              type="email" 
+              value={email} 
+              onChange={(event) => setEmail(event.target.value)} 
+              placeholder="nama@email.com"
+              required 
+            />
           </label>
-          <button className="button-primary" disabled={submitting} type="submit">
-            {submitting ? 'Mengirim...' : 'Kirim instruksi'}
-          </button>
-        </form>
-        <p className="auth-link">
-          <Link to="/login">Kembali masuk</Link>
-        </p>
-      </section>
+        </div>
+
+        <button className="button-primary" disabled={submitting} type="submit">
+          {submitting ? 'Mengirim tautan...' : 'Kirim instruksi'}
+        </button>
+        
+        <div className="auth-meta-row">
+          <p className="auth-link">
+            Ingat password Anda? <Link to="/login">Kembali masuk</Link>
+          </p>
+        </div>
+      </form>
     </main>
   )
 }
