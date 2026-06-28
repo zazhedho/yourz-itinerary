@@ -7,6 +7,7 @@ import DayTimeline from '../../components/itinerary/DayTimeline'
 import ErrorBanner from '../../components/common/ErrorBanner'
 import Loading from '../../components/common/Loading'
 import { useConfirm } from '../../hooks/useConfirm'
+import { useAuth } from '../../hooks/useAuth'
 import itineraryDayService from '../../services/itineraryDayService'
 import itineraryItemService from '../../services/itineraryItemService'
 import tripMemberService from '../../services/tripMemberService'
@@ -25,6 +26,7 @@ const TripDetail = () => {
   const location = useLocation()
   const index = location.state?.index || 0
   const { confirm, dialogProps } = useConfirm()
+  const { user } = useAuth()
   const [trip, setTrip] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -130,6 +132,12 @@ const TripDetail = () => {
     0,
   )
   const totalCostEstimate = trip.total_cost_estimate ?? calculatedCostEstimate
+  const currentMember = members.find((member) => member.user_id === user?.id)
+  const currentRole = currentMember?.role || (trip.owner_id === user?.id ? 'owner' : 'viewer')
+  const canEditTrip = currentRole === 'owner' || currentRole === 'editor'
+  const canManageMembers = currentRole === 'owner'
+  const canDeleteTrip = currentRole === 'owner'
+  const canLeaveTrip = currentRole !== 'owner'
 
   const getNextDate = () => {
     if (days.length === 0) return trip.start_date ? String(trip.start_date).split('T')[0] : ''
@@ -159,9 +167,11 @@ const TripDetail = () => {
         style={coverPhoto ? { backgroundImage: `linear-gradient(180deg, rgba(0, 0, 0, 0.05) 0%, rgba(0, 0, 0, 0.75) 100%), url("${coverPhoto}")` } : undefined}
       >
         <div className="cover-top-actions">
-          <Link className="detail-cover-action" to={`/trips/${trip.id}/edit`} title="Edit trip" aria-label="Edit trip">
-            <Edit3 size={17} />
-          </Link>
+          {canEditTrip && (
+            <Link className="detail-cover-action" to={`/trips/${trip.id}/edit`} title="Edit trip" aria-label="Edit trip">
+              <Edit3 size={17} />
+            </Link>
+          )}
           <button className="detail-cover-action" onClick={() => setShowSettings(true)} title="Pengaturan lanjutan" aria-label="Pengaturan lanjutan" type="button">
             <Settings size={17} />
           </button>
@@ -226,9 +236,11 @@ const TripDetail = () => {
               <p className="eyebrow">Members</p>
               <h2>Akses itinerary</h2>
             </div>
-            <Link className="icon-link" to={`/trips/${trip.id}/members/add`} title="Tambah member">
-              <UserPlus size={16} />
-            </Link>
+            {canManageMembers && (
+              <Link className="icon-link" to={`/trips/${trip.id}/members/add`} title="Tambah member">
+                <UserPlus size={16} />
+              </Link>
+            )}
           </div>
           <div className="member-list">
             {members.map((member) => (
@@ -241,7 +253,7 @@ const TripDetail = () => {
                   <span>{memberDisplayMeta(member)}</span>
                   <small>{roleLabel(member.role)}</small>
                 </div>
-                {member.role !== 'owner' && (
+                {canManageMembers && member.role !== 'owner' && (
                   <div className="member-actions">
                     <Link state={{ member }} to={`/trips/${trip.id}/members/${member.id}/role`}>
                       Edit role
@@ -263,11 +275,14 @@ const TripDetail = () => {
             <p className="eyebrow">Timeline</p>
             <h2>Rencana perjalanan</h2>
           </div>
-          <Link className="icon-link" state={{ nextDayNumber: getNextDayNumber(), nextDate: getNextDate() }} to={`/trips/${trip.id}/days/new`} title="Tambah hari">
-            <Plus size={18} />
-          </Link>
+          {canEditTrip && (
+            <Link className="icon-link" state={{ nextDayNumber: getNextDayNumber(), nextDate: getNextDate() }} to={`/trips/${trip.id}/days/new`} title="Tambah hari">
+              <Plus size={18} />
+            </Link>
+          )}
         </div>
         <DayTimeline
+          canEdit={canEditTrip}
           currency={trip.currency_code}
           days={days}
           onDeleteDay={handleDeleteDay}
@@ -285,26 +300,30 @@ const TripDetail = () => {
               </button>
             </div>
             <div className="danger-list">
-              <div className="danger-row">
-                <div className="danger-text">
-                  <strong>Keluar dari Trip</strong>
-                  <span>Anda akan kehilangan akses ke itinerary ini.</span>
+              {canLeaveTrip && (
+                <div className="danger-row">
+                  <div className="danger-text">
+                    <strong>Keluar dari Trip</strong>
+                    <span>Anda akan kehilangan akses ke itinerary ini.</span>
+                  </div>
+                  <button aria-label="Keluar dari trip" onClick={() => { setShowSettings(false); handleLeaveTrip(); }} type="button">
+                    <LogOut size={16} />
+                    Keluar
+                  </button>
                 </div>
-                <button aria-label="Keluar dari trip" onClick={() => { setShowSettings(false); handleLeaveTrip(); }} type="button">
-                  <LogOut size={16} />
-                  Keluar
-                </button>
-              </div>
-              <div className="danger-row">
-                <div className="danger-text">
-                  <strong>Hapus Trip</strong>
-                  <span>Tindakan ini permanen dan menghapus data.</span>
+              )}
+              {canDeleteTrip && (
+                <div className="danger-row">
+                  <div className="danger-text">
+                    <strong>Hapus Trip</strong>
+                    <span>Tindakan ini permanen dan menghapus data.</span>
+                  </div>
+                  <button aria-label="Hapus trip" onClick={() => { setShowSettings(false); handleDeleteTrip(); }} type="button">
+                    <Trash2 size={16} />
+                    Hapus
+                  </button>
                 </div>
-                <button aria-label="Hapus trip" onClick={() => { setShowSettings(false); handleDeleteTrip(); }} type="button">
-                  <Trash2 size={16} />
-                  Hapus
-                </button>
-              </div>
+              )}
             </div>
           </div>
         </div>

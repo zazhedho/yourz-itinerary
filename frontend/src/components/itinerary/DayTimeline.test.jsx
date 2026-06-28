@@ -27,4 +27,13 @@ describe('DayTimeline', () => {
     expect(screen.getByRole('link', { name: /edit hari/i })).toBeInTheDocument()
     expect(screen.getByText('Monas')).toBeInTheDocument()
   })
+
+  it('hides mutation actions for viewers', () => {
+    render(<DayTimeline canEdit={false} days={days} />, { wrapper: MemoryRouter })
+
+    expect(screen.queryByRole('button', { name: /tampilkan opsi/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /edit aktivitas/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /hapus aktivitas/i })).not.toBeInTheDocument()
+    expect(screen.getByText('Monas')).toBeInTheDocument()
+  })
 })

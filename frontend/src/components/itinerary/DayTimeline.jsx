@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 
 import { formatDate, formatMoney, formatTime } from '../../utils/formatters'
 
-const DayTimeline = ({ days = [], currency = 'IDR', onDeleteDay, onDeleteItem }) => {
+const DayTimeline = ({ days = [], currency = 'IDR', canEdit = true, onDeleteDay, onDeleteItem }) => {
   const [expandedDays, setExpandedDays] = useState({})
   const [expandedActions, setExpandedActions] = useState({})
 
@@ -25,7 +25,7 @@ const DayTimeline = ({ days = [], currency = 'IDR', onDeleteDay, onDeleteItem })
   }
 
   if (!days.length) {
-    return <div className="empty-card">Belum ada hari itinerary. Tambahkan hari pertama untuk mulai menyusun rencana.</div>
+    return <div className="empty-card">{canEdit ? 'Belum ada hari itinerary. Tambahkan hari pertama untuk mulai menyusun rencana.' : 'Belum ada hari itinerary.'}</div>
   }
 
   return (
@@ -49,30 +49,32 @@ const DayTimeline = ({ days = [], currency = 'IDR', onDeleteDay, onDeleteItem })
                 <h3>{day.title || (day.date ? formatDate(day.date) : 'Rencana hari ini')}</h3>
               </div>
             </div>
-            <div className="day-actions-wrapper" onClick={e => e.stopPropagation()}>
-              <div className={`inline-actions expander ${expandedActions[day.id] ? 'expanded' : ''}`}>
-                <Link className="icon-link" state={{ day }} to={`/itinerary-days/${day.id}/edit`} title="Edit hari">
-                  <Pencil size={16} />
-                </Link>
-                <Link className="icon-link" state={{ day }} to={`/itinerary-days/${day.id}/items/reorder`} title="Susun item">
-                  <GripVertical size={16} />
-                </Link>
-                <Link className="icon-link" to={`/itinerary-days/${day.id}/items/new`} title="Tambah item">
-                  <Plus size={18} />
-                </Link>
-                <button aria-label="Hapus hari" className="icon-link danger" onClick={() => onDeleteDay?.(day)} type="button" title="Hapus hari">
-                  <Trash2 size={16} />
+            {canEdit && (
+              <div className="day-actions-wrapper" onClick={e => e.stopPropagation()}>
+                <div className={`inline-actions expander ${expandedActions[day.id] ? 'expanded' : ''}`}>
+                  <Link className="icon-link" state={{ day }} to={`/itinerary-days/${day.id}/edit`} title="Edit hari">
+                    <Pencil size={16} />
+                  </Link>
+                  <Link className="icon-link" state={{ day }} to={`/itinerary-days/${day.id}/items/reorder`} title="Susun item">
+                    <GripVertical size={16} />
+                  </Link>
+                  <Link className="icon-link" to={`/itinerary-days/${day.id}/items/new`} title="Tambah item">
+                    <Plus size={18} />
+                  </Link>
+                  <button aria-label="Hapus hari" className="icon-link danger" onClick={() => onDeleteDay?.(day)} type="button" title="Hapus hari">
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  className={`icon-link action-trigger ${expandedActions[day.id] ? 'active' : ''}`}
+                  onClick={(e) => toggleActions(e, day.id)}
+                  aria-label="Tampilkan opsi"
+                >
+                  <MoreHorizontal size={18} />
                 </button>
               </div>
-              <button 
-                type="button" 
-                className={`icon-link action-trigger ${expandedActions[day.id] ? 'active' : ''}`}
-                onClick={(e) => toggleActions(e, day.id)}
-                aria-label="Tampilkan opsi"
-              >
-                <MoreHorizontal size={18} />
-              </button>
-            </div>
+            )}
           </div>
 
           <div className={`item-list-wrapper ${!expandedDays[day.id] ? 'collapsed' : ''}`}>
@@ -88,14 +90,16 @@ const DayTimeline = ({ days = [], currency = 'IDR', onDeleteDay, onDeleteItem })
                       <div className="item-content">
                         <div className="item-title-row">
                           <h4>{item.title}</h4>
-                          <div className="inline-actions compact">
-                            <Link className="icon-link" state={{ item }} to={`/itinerary-items/${item.id}/edit`} title="Edit aktivitas">
-                              <Pencil size={14} />
-                            </Link>
-                            <button aria-label="Hapus aktivitas" className="icon-link danger" onClick={() => onDeleteItem?.(item)} type="button" title="Hapus aktivitas">
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
+                          {canEdit && (
+                            <div className="inline-actions compact">
+                              <Link className="icon-link" state={{ item }} to={`/itinerary-items/${item.id}/edit`} title="Edit aktivitas">
+                                <Pencil size={14} />
+                              </Link>
+                              <button aria-label="Hapus aktivitas" className="icon-link danger" onClick={() => onDeleteItem?.(item)} type="button" title="Hapus aktivitas">
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          )}
                         </div>
                         <div className="item-meta">
                           {item.location_name && (
@@ -124,7 +128,7 @@ const DayTimeline = ({ days = [], currency = 'IDR', onDeleteDay, onDeleteItem })
                 ) : (
                   <div className="day-empty-state">
                     <span>Belum ada aktivitas di hari ini.</span>
-                    <Link to={`/itinerary-days/${day.id}/items/new`}>Tambah aktivitas</Link>
+                    {canEdit && <Link to={`/itinerary-days/${day.id}/items/new`}>Tambah aktivitas</Link>}
                   </div>
                 )}
               </div>
