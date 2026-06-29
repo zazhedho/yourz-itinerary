@@ -122,17 +122,23 @@ const DayTimeline = ({ days = [], currency = 'IDR', canEdit = true, memberNameBy
                           <span className="item-cost">
                             {formatMoney(item.cost_estimate, currency)}
                           </span>
-                          {item.created_at && (
-                            <span className="item-audit">
-                              Dibuat {memberNameByUserId[item.created_by] || 'member'} • {formatShortDateTime(item.created_at)}
-                            </span>
-                          )}
-                          {item.updated_at && (
-                            <span className="item-audit">
-                              Diubah {memberNameByUserId[item.updated_by] || 'member'} • {formatShortDateTime(item.updated_at)}
-                            </span>
-                          )}
                         </div>
+                        {(item.created_at || item.updated_at) && (
+                          <div className="item-audit-container">
+                            {item.created_at && (
+                              <span className="item-audit" title="Dibuat oleh">
+                                <Plus size={11} />
+                                {memberNameByUserId[item.created_by] || 'member'} • {formatShortDateTime(item.created_at)}
+                              </span>
+                            )}
+                            {item.updated_at && (
+                              <span className="item-audit" title="Diubah oleh">
+                                <Pencil size={11} />
+                                {memberNameByUserId[item.updated_by] || 'member'} • {formatShortDateTime(item.updated_at)}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </article>
                   ))

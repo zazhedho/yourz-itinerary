@@ -13,10 +13,31 @@ const TripMapOverviewContent = ({ apiKey, days = [] }) => {
   const [dayId, setDayId] = useState('all')
   const [map, setMap] = useState(null)
   const [selectedItemId, setSelectedItemId] = useState('')
+  const [collapsedMapDays, setCollapsedMapDays] = useState({})
   const mapId = getGoogleMapsMapId()
   const items = useMemo(() => getPinnedItems(days, dayId), [days, dayId])
   const center = useMemo(() => getTripMapCenter(items), [items])
   const selectedItem = items.find((item) => item.id === selectedItemId) || items[0]
+
+  const toggleMapDay = (dId) => {
+    setCollapsedMapDays(prev => ({
+      ...prev,
+      [dId]: !prev[dId]
+    }))
+  }
+
+  const groupedItems = useMemo(() => {
+    const groups = []
+    items.forEach(item => {
+      let group = groups.find(g => g.dayNumber === item.dayNumber)
+      if (!group) {
+        group = { dayNumber: item.dayNumber, items: [] }
+        groups.push(group)
+      }
+      group.items.push(item)
+    })
+    return groups.sort((a, b) => a.dayNumber - b.dayNumber)
+  }, [items])
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: apiKey,
     libraries,
@@ -100,20 +121,41 @@ const TripMapOverviewContent = ({ apiKey, days = [] }) => {
           )}
         </div>
         <div className="map-pin-list">
-          {items.length ? (
-            items.map((item) => (
-              <button
-                className={selectedItem?.id === item.id ? 'active' : ''}
-                key={item.id}
-                onClick={() => setSelectedItemId(item.id)}
-                type="button"
-              >
-                <MapPin size={15} />
-                <span>
-                  <strong>{item.title}</strong>
-                  <small>Day {item.dayNumber}{item.location_name ? ` • ${item.location_name}` : ''}</small>
-                </span>
-              </button>
+          {groupedItems.length ? (
+            groupedItems.map((group) => (
+              <div key={group.dayNumber} className="map-pin-group">
+                <button 
+                  className="map-pin-group-header" 
+                  onClick={() => toggleMapDay(group.dayNumber)}
+                  type="button"
+                >
+                  <span className="eyebrow">Day {group.dayNumber}</span>
+                  <svg 
+                    width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                    style={{ transform: collapsedMapDays[group.dayNumber] ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}
+                  >
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </button>
+                <div className={`map-pin-group-wrapper ${collapsedMapDays[group.dayNumber] ? 'collapsed' : ''}`}>
+                  <div className="map-pin-group-content">
+                    {group.items.map((item) => (
+                      <button
+                      className={selectedItem?.id === item.id ? 'active map-pin-item' : 'map-pin-item'}
+                      key={item.id}
+                      onClick={() => setSelectedItemId(item.id)}
+                      type="button"
+                    >
+                      <MapPin size={15} />
+                      <span>
+                        <strong>{item.title}</strong>
+                        <small>{item.location_name ? item.location_name : 'No location'}</small>
+                      </span>
+                    </button>
+                  ))}
+                  </div>
+                </div>
+              </div>
             ))
           ) : (
             <div className="map-empty">Belum ada aktivitas dengan koordinat.</div>
