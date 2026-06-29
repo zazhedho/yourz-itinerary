@@ -42,3 +42,19 @@ export const formatTime = (timeString) => {
   }
   return timeString
 }
+
+export const formatShortDateTime = (dateString) => {
+  if (!dateString) return ''
+  try {
+    const date = new Date(dateString)
+    if (isNaN(date.getTime())) return dateString
+    return new Intl.DateTimeFormat('id-ID', {
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(date)
+  } catch {
+    return dateString
+  }
+}

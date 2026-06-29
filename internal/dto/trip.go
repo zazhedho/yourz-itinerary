@@ -50,6 +50,12 @@ type TripDetailResponse struct {
 	CurrencyCode      string                 `json:"currency_code"`
 	Status            string                 `json:"status"`
 	TotalCostEstimate float64                `json:"total_cost_estimate"`
+	CurrentMemberId   string                 `json:"current_member_id,omitempty"`
+	CurrentMemberRole string                 `json:"current_member_role,omitempty"`
+	CanEdit           bool                   `json:"can_edit"`
+	CanManageMembers  bool                   `json:"can_manage_members"`
+	CanDelete         bool                   `json:"can_delete"`
+	CanLeave          bool                   `json:"can_leave"`
 	CreatedBy         string                 `json:"created_by"`
 	UpdatedBy         string                 `json:"updated_by"`
 	CreatedAt         string                 `json:"created_at,omitempty"`

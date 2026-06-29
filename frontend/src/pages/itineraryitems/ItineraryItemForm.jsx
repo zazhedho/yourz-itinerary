@@ -3,9 +3,11 @@ import { MapPin } from 'lucide-react'
 import { lazy, Suspense, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
+import AccessDenied from '../../components/common/AccessDenied'
 import ErrorBanner from '../../components/common/ErrorBanner'
 import Loading from '../../components/common/Loading'
 import GooglePlaceAutocomplete from '../../components/maps/GooglePlaceAutocomplete'
+import useTripAccess from '../../hooks/useTripAccess'
 import { getErrorMessage } from '../../services/api'
 import itineraryItemService from '../../services/itineraryItemService'
 import { placeToItineraryLocation } from '../../utils/googlePlaces'
@@ -21,6 +23,8 @@ const ItineraryItemForm = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const existingItem = location.state?.item
+  const accessTripId = location.state?.tripId || existingItem?.trip_id
+  const { allowed, error: accessError, loading: accessLoading } = useTripAccess(accessTripId, 'edit')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [form, setForm] = useState({
@@ -73,6 +77,10 @@ const ItineraryItemForm = () => {
       setSubmitting(false)
     }
   }
+
+  if (!accessTripId) return <AccessDenied message="Buka form dari detail trip agar akses bisa diverifikasi." />
+  if (accessLoading) return <Loading label="Memeriksa akses trip..." />
+  if (!allowed) return <AccessDenied backTo={`/trips/${accessTripId}`} message={accessError || 'Hanya owner dan editor yang bisa mengubah aktivitas.'} />
 
   return (
     <section className="screen-stack">

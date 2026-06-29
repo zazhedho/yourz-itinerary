@@ -1,45 +1,45 @@
-import { useEffect, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Calendar } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 
+import AccessDenied from '../../components/common/AccessDenied'
 import ErrorBanner from '../../components/common/ErrorBanner'
+import Loading from '../../components/common/Loading'
+import useTripAccess from '../../hooks/useTripAccess'
 import tripService from '../../services/tripService'
-import { getErrorMessage, getResponseData } from '../../services/api'
+import { getErrorMessage } from '../../services/api'
 import { buildTripPayload } from '../../utils/payloads'
 
 const TripForm = () => {
   const { tripId } = useParams()
   const navigate = useNavigate()
+  const { allowed, error: accessError, loading, trip } = useTripAccess(tripId, 'edit')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [form, setForm] = useState({
+  const [draft, setDraft] = useState({})
+  const baseForm = useMemo(() => ({
     title: '',
     destination: '',
     start_date: '',
     end_date: '',
     timezone: 'Asia/Jakarta',
     currency_code: 'IDR',
-  })
-
-  useEffect(() => {
-    if (!tripId) return
-    tripService.getById(tripId).then((response) => {
-      const trip = getResponseData(response)
-      setForm({
-        title: trip.title || '',
-        destination: trip.destination || '',
-        start_date: trip.start_date || '',
-        end_date: trip.end_date || '',
-        timezone: trip.timezone || 'Asia/Jakarta',
-        currency_code: trip.currency_code || 'IDR',
-      })
-    })
-  }, [tripId])
+    ...(tripId && trip ? {
+      title: trip.title || '',
+      destination: trip.destination || '',
+      start_date: trip.start_date || '',
+      end_date: trip.end_date || '',
+      timezone: trip.timezone || 'Asia/Jakarta',
+      currency_code: trip.currency_code || 'IDR',
+    } : {}),
+  }), [tripId, trip])
+  const form = { ...baseForm, ...draft }
 
   const handleChange = (event) => {
     const { name, value } = event.target
-    setForm((current) => {
-      if (name === 'start_date' && current.end_date && value && current.end_date < value) {
+    setDraft((current) => {
+      const next = { ...form, ...current }
+      if (name === 'start_date' && next.end_date && value && next.end_date < value) {
         return { ...current, start_date: value, end_date: value }
       }
       return { ...current, [name]: value }
@@ -65,6 +65,9 @@ const TripForm = () => {
       setSubmitting(false)
     }
   }
+
+  if (tripId && loading) return <Loading label="Memeriksa akses trip..." />
+  if (tripId && !allowed) return <AccessDenied backTo={`/trips/${tripId}`} message={accessError || 'Hanya owner dan editor yang bisa mengubah trip.'} />
 
   return (
     <section className="screen-stack">

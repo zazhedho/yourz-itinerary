@@ -11,7 +11,17 @@ const days = [
     day_number: 1,
     title: 'Jakarta',
     date: '2026-06-26',
-    items: [{ id: 'item-1', title: 'Monas', start_time: '09:00', cost_estimate: 0 }],
+    items: [{
+      id: 'item-1',
+      title: 'Monas',
+      start_time: '09:00',
+      cost_estimate: 0,
+      description: 'Bawa payung dan tiket online.',
+      created_by: 'user-1',
+      updated_by: 'user-2',
+      created_at: '2026-06-26T09:00:00+07:00',
+      updated_at: '2026-06-26T10:30:00+07:00',
+    }],
   },
 ]
 
@@ -35,5 +45,27 @@ describe('DayTimeline', () => {
     expect(screen.queryByRole('link', { name: /edit aktivitas/i })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /hapus aktivitas/i })).not.toBeInTheDocument()
     expect(screen.getByText('Monas')).toBeInTheDocument()
+  })
+
+  it('shows compact item audit metadata with member names', () => {
+    render(
+      <DayTimeline
+        days={days}
+        memberNameByUserId={{
+          'user-1': 'Zaki',
+          'user-2': 'Nadia',
+        }}
+      />,
+      { wrapper: MemoryRouter },
+    )
+
+    expect(screen.getByText(/dibuat zaki/i)).toBeInTheDocument()
+    expect(screen.getByText(/diubah nadia/i)).toBeInTheDocument()
+  })
+
+  it('shows item notes in day timeline', () => {
+    renderTimeline()
+
+    expect(screen.getByText('Bawa payung dan tiket online.')).toBeInTheDocument()
   })
 })

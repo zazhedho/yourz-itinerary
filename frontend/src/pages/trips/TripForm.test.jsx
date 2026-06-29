@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { AuthContext } from '../../contexts/auth-context'
 import tripService from '../../services/tripService'
 import TripForm from './TripForm'
 
@@ -14,7 +15,18 @@ vi.mock('../../services/tripService', () => ({
   },
 }))
 
-const renderTripForm = () => render(<TripForm />, { wrapper: MemoryRouter })
+const authValue = {
+  user: { id: 'user-1' },
+  loading: false,
+  isAuthenticated: true,
+}
+
+const renderTripForm = () => render(
+  <AuthContext.Provider value={authValue}>
+    <TripForm />
+  </AuthContext.Provider>,
+  { wrapper: MemoryRouter },
+)
 
 describe('TripForm', () => {
   beforeEach(() => {

@@ -3,25 +3,45 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import ErrorBanner from '../../components/common/ErrorBanner'
-import Loading from '../../components/common/Loading'
+import PageSkeleton from '../../components/common/PageSkeleton'
+import RetryState from '../../components/common/RetryState'
 import TripCard from '../../components/trips/TripCard'
 import tripService from '../../services/tripService'
 import { getErrorMessage, getResponseData } from '../../services/api'
 
 const TripList = () => {
   const [trips, setTrips] = useState([])
-  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [requestKey, setRequestKey] = useState(0)
+  const [loadedKey, setLoadedKey] = useState(null)
+
+  const retryLoadTrips = () => {
+    setRequestKey((current) => current + 1)
+  }
 
   useEffect(() => {
+    let active = true
     tripService
       .getAll()
-      .then((response) => setTrips(getResponseData(response) || []))
-      .catch((err) => setError(getErrorMessage(err, 'Gagal memuat trips')))
-      .finally(() => setLoading(false))
-  }, [])
+      .then((response) => {
+        if (!active) return
+        setTrips(getResponseData(response) || [])
+        setError('')
+      })
+      .catch((err) => {
+        if (active) setError(getErrorMessage(err, 'Gagal memuat trips'))
+      })
+      .finally(() => {
+        if (active) setLoadedKey(requestKey)
+      })
 
-  if (loading) return <Loading label="Memuat trips..." />
+    return () => {
+      active = false
+    }
+  }, [requestKey])
+
+  const loading = loadedKey !== requestKey
+  if (loading) return <PageSkeleton label="Memuat trips" rows={3} />
 
   return (
     <section className="screen-stack">
@@ -34,7 +54,7 @@ const TripList = () => {
           <Plus size={20} />
         </Link>
       </div>
-      <ErrorBanner message={error} />
+      {error ? <RetryState message={error} onRetry={retryLoadTrips} /> : <ErrorBanner message={error} />}
       {trips.length ? (
         <div className="trip-list">
           {trips.map((trip, index) => (

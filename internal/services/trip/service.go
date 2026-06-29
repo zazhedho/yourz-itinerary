@@ -109,7 +109,10 @@ func (s *TripService) CreateTrip(ctx context.Context, userId string, req dto.Cre
 		return dto.TripDetailResponse{}, err
 	}
 
-	return tripToDetail(createdTrip, []domaintripmember.TripMember{member}, s.loadUsersByID(ctx, []domaintripmember.TripMember{member}), daySyncPlan.Create, nil), nil
+	return applyTripAccessMetadata(
+		tripToDetail(createdTrip, []domaintripmember.TripMember{member}, s.loadUsersByID(ctx, []domaintripmember.TripMember{member}), daySyncPlan.Create, nil),
+		member,
+	), nil
 }
 
 func (s *TripService) GetTripDetail(ctx context.Context, userId, tripId string) (dto.TripDetailResponse, error) {
@@ -128,7 +131,7 @@ func (s *TripService) GetTripDetail(ctx context.Context, userId, tripId string) 
 		return dto.TripDetailResponse{}, err
 	}
 
-	return tripToDetail(trip, members, s.loadUsersByID(ctx, members), days, itemsByDay), nil
+	return applyTripAccessMetadata(tripToDetail(trip, members, s.loadUsersByID(ctx, members), days, itemsByDay), member), nil
 }
 
 func (s *TripService) ListTrips(ctx context.Context, userId string) ([]dto.TripListResponse, error) {
@@ -239,7 +242,7 @@ func (s *TripService) UpdateTrip(ctx context.Context, userId, tripId string, req
 		}
 	}
 
-	return tripToDetail(trip, members, s.loadUsersByID(ctx, members), days, itemsByDay), nil
+	return applyTripAccessMetadata(tripToDetail(trip, members, s.loadUsersByID(ctx, members), days, itemsByDay), member), nil
 }
 
 func (s *TripService) DeleteTrip(ctx context.Context, userId, tripId string) error {

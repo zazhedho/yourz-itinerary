@@ -7,6 +7,8 @@ import (
 	domainitineraryday "yourz-itinerary/internal/domain/itineraryday"
 	domainitineraryitem "yourz-itinerary/internal/domain/itineraryitem"
 	domaintrip "yourz-itinerary/internal/domain/trip"
+	domaintripmember "yourz-itinerary/internal/domain/tripmember"
+	"yourz-itinerary/internal/dto"
 	serviceshared "yourz-itinerary/internal/services/shared"
 )
 
@@ -139,4 +141,68 @@ func TestTripToDetailIncludesTotalCostEstimate(t *testing.T) {
 	if result.TotalCostEstimate != 500000 {
 		t.Fatalf("expected total cost estimate 500000, got %v", result.TotalCostEstimate)
 	}
+}
+
+func TestApplyTripAccessMetadata(t *testing.T) {
+	tests := []struct {
+		name             string
+		member           domaintripmember.TripMember
+		wantRole         string
+		wantEdit         bool
+		wantManageMember bool
+		wantDelete       bool
+		wantLeave        bool
+	}{
+		{
+			name:             "owner",
+			member:           domaintripmember.TripMember{Id: "member-owner", Role: serviceshared.TripRoleOwner},
+			wantRole:         serviceshared.TripRoleOwner,
+			wantEdit:         true,
+			wantManageMember: true,
+			wantDelete:       true,
+			wantLeave:        false,
+		},
+		{
+			name:      "editor",
+			member:    domaintripmember.TripMember{Id: "member-editor", Role: serviceshared.TripRoleEditor},
+			wantRole:  serviceshared.TripRoleEditor,
+			wantEdit:  true,
+			wantLeave: true,
+		},
+		{
+			name:      "viewer",
+			member:    domaintripmember.TripMember{Id: "member-viewer", Role: serviceshared.TripRoleViewer},
+			wantRole:  serviceshared.TripRoleViewer,
+			wantLeave: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			detail := applyTripAccessMetadata(dtoTripDetailForTest(), tt.member)
+
+			if detail.CurrentMemberId != tt.member.Id {
+				t.Fatalf("expected current member id %s, got %s", tt.member.Id, detail.CurrentMemberId)
+			}
+			if detail.CurrentMemberRole != tt.wantRole {
+				t.Fatalf("expected role %s, got %s", tt.wantRole, detail.CurrentMemberRole)
+			}
+			if detail.CanEdit != tt.wantEdit {
+				t.Fatalf("expected can_edit %v, got %v", tt.wantEdit, detail.CanEdit)
+			}
+			if detail.CanManageMembers != tt.wantManageMember {
+				t.Fatalf("expected can_manage_members %v, got %v", tt.wantManageMember, detail.CanManageMembers)
+			}
+			if detail.CanDelete != tt.wantDelete {
+				t.Fatalf("expected can_delete %v, got %v", tt.wantDelete, detail.CanDelete)
+			}
+			if detail.CanLeave != tt.wantLeave {
+				t.Fatalf("expected can_leave %v, got %v", tt.wantLeave, detail.CanLeave)
+			}
+		})
+	}
+}
+
+func dtoTripDetailForTest() dto.TripDetailResponse {
+	return dto.TripDetailResponse{Id: "trip-1"}
 }

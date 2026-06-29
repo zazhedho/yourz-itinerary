@@ -180,3 +180,13 @@ func tripToDetail(trip domaintrip.Trip, members []domaintripmember.TripMember, u
 
 	return tr
 }
+
+func applyTripAccessMetadata(detail dto.TripDetailResponse, member domaintripmember.TripMember) dto.TripDetailResponse {
+	detail.CurrentMemberId = member.Id
+	detail.CurrentMemberRole = member.Role
+	detail.CanEdit = serviceshared.CanEditTrip(member.Role)
+	detail.CanManageMembers = serviceshared.CanManageTripMembers(member.Role)
+	detail.CanDelete = member.Role == serviceshared.TripRoleOwner
+	detail.CanLeave = member.Role != serviceshared.TripRoleOwner
+	return detail
+}

@@ -1,13 +1,15 @@
 import { CalendarDays, Edit3, ListChecks, LogOut, Plus, Trash2, UserMinus, UserPlus, UsersRound, Calendar, Wallet, Settings, X } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useLocation } from 'react-router-dom'
 
 import ConfirmDialog from '../../components/common/ConfirmDialog'
 import DayTimeline from '../../components/itinerary/DayTimeline'
 import ErrorBanner from '../../components/common/ErrorBanner'
-import Loading from '../../components/common/Loading'
+import PageSkeleton from '../../components/common/PageSkeleton'
+import RetryState from '../../components/common/RetryState'
 import { useConfirm } from '../../hooks/useConfirm'
 import { useAuth } from '../../hooks/useAuth'
+import TripMapOverview from '../../components/maps/TripMapOverview'
 import itineraryDayService from '../../services/itineraryDayService'
 import itineraryItemService from '../../services/itineraryItemService'
 import tripMemberService from '../../services/tripMemberService'
@@ -15,6 +17,7 @@ import tripService from '../../services/tripService'
 import { getErrorMessage, getResponseData } from '../../services/api'
 import { getDestinationPhoto } from '../../services/unsplashService'
 import { formatDateRange, formatMoney, roleLabel } from '../../utils/formatters'
+import { getTripAccess } from '../../utils/tripAccess'
 
 const shortId = (value = '') => value.slice(0, 8)
 const memberDisplayName = (member) => member.user_name || `User ${shortId(member.user_id)}`
@@ -33,6 +36,11 @@ const TripDetail = () => {
   const [showMembers, setShowMembers] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [coverPhoto, setCoverPhoto] = useState(null)
+  const members = useMemo(() => trip?.members || [], [trip?.members])
+  const memberNameByUserId = useMemo(
+    () => Object.fromEntries(members.map((member) => [member.user_id, memberDisplayName(member)])),
+    [members],
+  )
 
   useEffect(() => {
     if (!trip?.destination) return
@@ -121,10 +129,9 @@ const TripDetail = () => {
       await loadTrip()
     }, 'Gagal menghapus aktivitas')
 
-  if (loading) return <Loading label="Memuat detail trip..." />
-  if (!trip) return <ErrorBanner message={error || 'Trip tidak ditemukan'} />
+  if (loading) return <PageSkeleton label="Memuat detail trip" rows={4} />
+  if (!trip) return <RetryState message={error || 'Trip tidak ditemukan'} onRetry={loadTrip} />
 
-  const members = trip.members || []
   const days = trip.days || []
   const itemCount = days.reduce((total, day) => total + (day.items?.length || 0), 0)
   const calculatedCostEstimate = days.reduce(
@@ -132,12 +139,11 @@ const TripDetail = () => {
     0,
   )
   const totalCostEstimate = trip.total_cost_estimate ?? calculatedCostEstimate
-  const currentMember = members.find((member) => member.user_id === user?.id)
-  const currentRole = currentMember?.role || (trip.owner_id === user?.id ? 'owner' : 'viewer')
-  const canEditTrip = currentRole === 'owner' || currentRole === 'editor'
-  const canManageMembers = currentRole === 'owner'
-  const canDeleteTrip = currentRole === 'owner'
-  const canLeaveTrip = currentRole !== 'owner'
+  const access = getTripAccess(trip, user)
+  const canEditTrip = access.canEdit
+  const canManageMembers = access.canManageMembers
+  const canDeleteTrip = access.canDelete
+  const canLeaveTrip = access.canLeave
 
   const getNextDate = () => {
     if (days.length === 0) return trip.start_date ? String(trip.start_date).split('T')[0] : ''
@@ -249,7 +255,10 @@ const TripDetail = () => {
                   {member.avatar_url ? <img alt="" src={member.avatar_url} /> : memberDisplayName(member).charAt(0)}
                 </div>
                 <div>
-                  <strong>{memberDisplayName(member)}</strong>
+                  <strong>
+                    {memberDisplayName(member)}
+                    {member.role === 'owner' && <span className="member-owner-badge">Owner</span>}
+                  </strong>
                   <span>{memberDisplayMeta(member)}</span>
                   <small>{roleLabel(member.role)}</small>
                 </div>
@@ -285,10 +294,13 @@ const TripDetail = () => {
           canEdit={canEditTrip}
           currency={trip.currency_code}
           days={days}
+          memberNameByUserId={memberNameByUserId}
           onDeleteDay={handleDeleteDay}
           onDeleteItem={handleDeleteItem}
         />
       </section>
+
+      <TripMapOverview days={days} />
 
       {showSettings && (
         <div className="dialog-backdrop" onClick={() => setShowSettings(false)}>

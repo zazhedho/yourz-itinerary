@@ -2,9 +2,9 @@ import { GripVertical, MapPin, Pencil, Plus, Trash2, ChevronDown, MoreHorizontal
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 
-import { formatDate, formatMoney, formatTime } from '../../utils/formatters'
+import { formatDate, formatMoney, formatShortDateTime, formatTime } from '../../utils/formatters'
 
-const DayTimeline = ({ days = [], currency = 'IDR', canEdit = true, onDeleteDay, onDeleteItem }) => {
+const DayTimeline = ({ days = [], currency = 'IDR', canEdit = true, memberNameByUserId = {}, onDeleteDay, onDeleteItem }) => {
   const [expandedDays, setExpandedDays] = useState({})
   const [expandedActions, setExpandedActions] = useState({})
 
@@ -58,7 +58,7 @@ const DayTimeline = ({ days = [], currency = 'IDR', canEdit = true, onDeleteDay,
                   <Link className="icon-link" state={{ day }} to={`/itinerary-days/${day.id}/items/reorder`} title="Susun item">
                     <GripVertical size={16} />
                   </Link>
-                  <Link className="icon-link" to={`/itinerary-days/${day.id}/items/new`} title="Tambah item">
+                  <Link className="icon-link" state={{ tripId: day.trip_id }} to={`/itinerary-days/${day.id}/items/new`} title="Tambah item">
                     <Plus size={18} />
                   </Link>
                   <button aria-label="Hapus hari" className="icon-link danger" onClick={() => onDeleteDay?.(day)} type="button" title="Hapus hari">
@@ -92,7 +92,7 @@ const DayTimeline = ({ days = [], currency = 'IDR', canEdit = true, onDeleteDay,
                           <h4>{item.title}</h4>
                           {canEdit && (
                             <div className="inline-actions compact">
-                              <Link className="icon-link" state={{ item }} to={`/itinerary-items/${item.id}/edit`} title="Edit aktivitas">
+                              <Link className="icon-link" state={{ item, tripId: day.trip_id }} to={`/itinerary-items/${item.id}/edit`} title="Edit aktivitas">
                                 <Pencil size={14} />
                               </Link>
                               <button aria-label="Hapus aktivitas" className="icon-link danger" onClick={() => onDeleteItem?.(item)} type="button" title="Hapus aktivitas">
@@ -101,6 +101,7 @@ const DayTimeline = ({ days = [], currency = 'IDR', canEdit = true, onDeleteDay,
                             </div>
                           )}
                         </div>
+                        {item.description && <p className="item-note">{item.description}</p>}
                         <div className="item-meta">
                           {item.location_name && (
                             <a
@@ -121,6 +122,16 @@ const DayTimeline = ({ days = [], currency = 'IDR', canEdit = true, onDeleteDay,
                           <span className="item-cost">
                             {formatMoney(item.cost_estimate, currency)}
                           </span>
+                          {item.created_at && (
+                            <span className="item-audit">
+                              Dibuat {memberNameByUserId[item.created_by] || 'member'} • {formatShortDateTime(item.created_at)}
+                            </span>
+                          )}
+                          {item.updated_at && (
+                            <span className="item-audit">
+                              Diubah {memberNameByUserId[item.updated_by] || 'member'} • {formatShortDateTime(item.updated_at)}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </article>
@@ -128,7 +139,7 @@ const DayTimeline = ({ days = [], currency = 'IDR', canEdit = true, onDeleteDay,
                 ) : (
                   <div className="day-empty-state">
                     <span>Belum ada aktivitas di hari ini.</span>
-                    {canEdit && <Link to={`/itinerary-days/${day.id}/items/new`}>Tambah aktivitas</Link>}
+                    {canEdit && <Link state={{ tripId: day.trip_id }} to={`/itinerary-days/${day.id}/items/new`}>Tambah aktivitas</Link>}
                   </div>
                 )}
               </div>

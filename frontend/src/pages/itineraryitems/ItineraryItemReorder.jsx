@@ -1,8 +1,11 @@
 import { useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
+import AccessDenied from '../../components/common/AccessDenied'
 import ErrorBanner from '../../components/common/ErrorBanner'
 import ReorderList from '../../components/itinerary/ReorderList'
+import Loading from '../../components/common/Loading'
+import useTripAccess from '../../hooks/useTripAccess'
 import { getErrorMessage } from '../../services/api'
 import itineraryItemService from '../../services/itineraryItemService'
 
@@ -10,6 +13,8 @@ const ItineraryItemReorder = () => {
   const { dayId } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
+  const accessTripId = location.state?.tripId || location.state?.day?.trip_id
+  const { allowed, error: accessError, loading } = useTripAccess(accessTripId, 'edit')
   const [items, setItems] = useState(location.state?.day?.items || [])
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -35,6 +40,10 @@ const ItineraryItemReorder = () => {
       setSubmitting(false)
     }
   }
+
+  if (!accessTripId) return <AccessDenied message="Buka form dari detail trip agar akses bisa diverifikasi." />
+  if (loading) return <Loading label="Memeriksa akses trip..." />
+  if (!allowed) return <AccessDenied backTo={`/trips/${accessTripId}`} message={accessError || 'Hanya owner dan editor yang bisa menyusun aktivitas.'} />
 
   return (
     <section className="screen-stack">

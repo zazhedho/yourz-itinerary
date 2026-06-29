@@ -1,7 +1,10 @@
 import { useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
+import AccessDenied from '../../components/common/AccessDenied'
 import ErrorBanner from '../../components/common/ErrorBanner'
+import Loading from '../../components/common/Loading'
+import useTripAccess from '../../hooks/useTripAccess'
 import itineraryDayService from '../../services/itineraryDayService'
 import { getErrorMessage } from '../../services/api'
 import { buildItineraryDayPayload } from '../../utils/payloads'
@@ -11,6 +14,8 @@ const ItineraryDayForm = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const existingDay = location.state?.day
+  const accessTripId = tripId || existingDay?.trip_id || location.state?.tripId
+  const { allowed, error: accessError, loading } = useTripAccess(accessTripId, 'edit')
   const nextDayNumber = location.state?.nextDayNumber || 1
   const nextDate = location.state?.nextDate || ''
   const [error, setError] = useState('')
@@ -45,6 +50,10 @@ const ItineraryDayForm = () => {
       setSubmitting(false)
     }
   }
+
+  if (!accessTripId) return <AccessDenied message="Buka form dari detail trip agar akses bisa diverifikasi." />
+  if (loading) return <Loading label="Memeriksa akses trip..." />
+  if (!allowed) return <AccessDenied backTo={`/trips/${accessTripId}`} message={accessError || 'Hanya owner dan editor yang bisa mengubah timeline.'} />
 
   return (
     <section className="screen-stack">
