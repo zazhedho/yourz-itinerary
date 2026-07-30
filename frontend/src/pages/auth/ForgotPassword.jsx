@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { MapPin, Plane } from 'lucide-react'
 
@@ -6,11 +6,30 @@ import ErrorBanner from '../../components/common/ErrorBanner'
 import { getErrorMessage } from '../../services/api'
 import authService from '../../services/authService'
 
+const cooldownStorageKey = 'forgot_password_cooldown'
+
+const getStoredCooldown = () => {
+  const expiresAt = Number(sessionStorage.getItem(cooldownStorageKey))
+  const remaining = Math.ceil((expiresAt - Date.now()) / 1000)
+  if (remaining > 0) return remaining
+
+  sessionStorage.removeItem(cooldownStorageKey)
+  return 0
+}
+
 const ForgotPassword = () => {
   const [email, setEmail] = useState('')
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [cooldown, setCooldown] = useState(getStoredCooldown)
+
+  useEffect(() => {
+    if (cooldown <= 0) return undefined
+
+    const timer = setTimeout(() => setCooldown(getStoredCooldown()), 1000)
+    return () => clearTimeout(timer)
+  }, [cooldown])
 
   const handleSubmit = async (event) => {
     event.preventDefault()
@@ -18,7 +37,10 @@ const ForgotPassword = () => {
     setError('')
     setMessage('')
     try {
-      await authService.forgotPassword({ email })
+      const response = await authService.forgotPassword({ email })
+      const cooldownTime = Number(response.data?.data?.cooldown || 60)
+      sessionStorage.setItem(cooldownStorageKey, Date.now() + cooldownTime * 1000)
+      setCooldown(cooldownTime)
       setMessage('Instruksi reset password dikirim jika email terdaftar.')
     } catch (err) {
       setError(getErrorMessage(err, 'Gagal mengirim reset password'))
@@ -87,8 +109,8 @@ const ForgotPassword = () => {
             </label>
           </div>
 
-          <button className="button-primary button-auth-submit" disabled={submitting} type="submit">
-            {submitting ? 'Mengirim...' : 'Kirim instruksi'}
+          <button className="button-primary button-auth-submit" disabled={submitting || cooldown > 0} type="submit">
+            {submitting ? 'Mengirim...' : cooldown > 0 ? `Kirim ulang dalam ${cooldown}s` : 'Kirim instruksi'}
           </button>
 
           <div className="auth-footer-prompt">
