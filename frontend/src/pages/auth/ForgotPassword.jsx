@@ -28,7 +28,7 @@ const ForgotPassword = () => {
   }
 
   return (
-    <main className="auth-screen-split auth-screen-forgot">
+    <main className="auth-screen-split auth-screen-recovery auth-screen-forgot">
       <section className="auth-hero">
         <div className="auth-hero-header">
           <Link to="/login" className="auth-brand-badge">

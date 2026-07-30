@@ -2809,13 +2809,13 @@ a.item-location:active {
 
 .auth-screen-login .auth-fields input:hover,
 .auth-screen-register .auth-fields input:hover,
-.auth-screen-forgot .auth-fields input:hover {
+.auth-screen-recovery .auth-fields input:hover {
   border-color: #b8c9c4;
 }
 
 .auth-screen-login .auth-fields input:focus,
 .auth-screen-register .auth-fields input:focus,
-.auth-screen-forgot .auth-fields input:focus {
+.auth-screen-recovery .auth-fields input:focus {
   border-color: var(--color-primary);
   background: #ffffff;
   box-shadow: 0 0 0 3px rgba(255, 56, 92, 0.12);
@@ -2828,7 +2828,7 @@ a.item-location:active {
 
 .auth-screen-login .button-auth-submit:hover:not(:disabled),
 .auth-screen-register .button-auth-submit:hover:not(:disabled),
-.auth-screen-forgot .button-auth-submit:hover:not(:disabled) {
+.auth-screen-recovery .button-auth-submit:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 8px 18px rgba(255, 56, 92, 0.28);
 }
@@ -2851,7 +2851,7 @@ a.item-location:active {
 
 .auth-screen-login .auth-brand-badge svg,
 .auth-screen-register .auth-brand-badge svg,
-.auth-screen-forgot .auth-brand-badge svg {
+.auth-screen-recovery .auth-brand-badge svg {
   color: #ff8ba0;
 }
 
@@ -2936,11 +2936,11 @@ a.item-location:active {
   }
 }
 
-.auth-screen-split.auth-screen-forgot .auth-hero {
+.auth-screen-split.auth-screen-recovery .auth-hero {
   background: #173f35;
 }
 
-.auth-screen-forgot .auth-brand-badge {
+.auth-screen-recovery .auth-brand-badge {
   padding: 0;
   border: 0;
   border-radius: 0;
@@ -2950,12 +2950,12 @@ a.item-location:active {
   -webkit-backdrop-filter: none;
 }
 
-.auth-screen-forgot .auth-brand-badge:hover {
+.auth-screen-recovery .auth-brand-badge:hover {
   background: transparent;
   transform: none;
 }
 
-.auth-screen-forgot .auth-hero .auth-kicker {
+.auth-screen-recovery .auth-hero .auth-kicker {
   margin: 0 0 8px;
   color: rgba(255, 255, 255, 0.72);
   font-size: 11px;
@@ -2963,17 +2963,17 @@ a.item-location:active {
   line-height: 1.2;
 }
 
-.auth-screen-forgot .auth-hero h1 {
+.auth-screen-recovery .auth-hero h1 {
   max-width: 440px;
   font-size: clamp(32px, 3.2vw, 40px);
   letter-spacing: 0;
 }
 
-.auth-screen-forgot .auth-hero-body > p:last-child {
+.auth-screen-recovery .auth-hero-body > p:last-child {
   max-width: 400px;
 }
 
-.auth-screen-split.auth-screen-forgot .auth-card {
+.auth-screen-split.auth-screen-recovery .auth-card {
   width: min(100%, 440px);
   max-width: 440px;
   gap: 12px;
@@ -2986,18 +2986,18 @@ a.item-location:active {
   -webkit-backdrop-filter: none;
 }
 
-.auth-screen-forgot .auth-fields {
+.auth-screen-recovery .auth-fields {
   gap: 10px;
 }
 
-.auth-screen-forgot .auth-fields input {
+.auth-screen-recovery .auth-fields input {
   min-height: 48px;
   padding: 10px 12px;
   border-color: #dce5e2;
   background: #f7faf9;
 }
 
-.auth-screen-forgot .button-auth-submit {
+.auth-screen-recovery .button-auth-submit {
   min-height: 48px;
   border-radius: 8px;
 }
@@ -3023,19 +3023,19 @@ a.item-location:active {
     margin: 0;
   }
 
-  .auth-screen-split.auth-screen-forgot .auth-hero {
+  .auth-screen-split.auth-screen-recovery .auth-hero {
     display: grid;
     grid-template-rows: auto 1fr auto;
   }
 
-  .auth-screen-forgot .auth-hero-body {
+  .auth-screen-recovery .auth-hero-body {
     align-self: center;
     margin: 0;
   }
 
   .auth-screen-split.auth-screen-login .auth-hero,
   .auth-screen-split.auth-screen-register .auth-hero,
-  .auth-screen-split.auth-screen-forgot .auth-hero {
+  .auth-screen-split.auth-screen-recovery .auth-hero {
     border-right: 8px solid #f6c453;
   }
 }
@@ -3075,30 +3075,30 @@ a.item-location:active {
     padding-top: 16px;
   }
 
-  .auth-screen-split.auth-screen-forgot .auth-hero {
+  .auth-screen-split.auth-screen-recovery .auth-hero {
     min-height: 260px;
     justify-content: flex-start;
     padding: 24px;
   }
 
-  .auth-screen-forgot .auth-hero-body {
+  .auth-screen-recovery .auth-hero-body {
     margin-top: 24px;
   }
 
-  .auth-screen-split.auth-screen-forgot .auth-form-wrapper {
+  .auth-screen-split.auth-screen-recovery .auth-form-wrapper {
     margin-top: 0;
     padding-top: 16px;
   }
 
   .auth-screen-split.auth-screen-login .auth-hero,
   .auth-screen-split.auth-screen-register .auth-hero,
-  .auth-screen-split.auth-screen-forgot .auth-hero {
+  .auth-screen-split.auth-screen-recovery .auth-hero {
     border-bottom: 8px solid #f6c453;
   }
 
   .auth-screen-login .auth-hero-body > p:last-child,
   .auth-screen-register .auth-hero-body > p:last-child,
-  .auth-screen-forgot .auth-hero-body > p:last-child {
+  .auth-screen-recovery .auth-hero-body > p:last-child {
     display: block;
     margin-top: 10px;
     margin-bottom: 0;
