@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { KeyRound, ShieldAlert } from 'lucide-react'
+import { MapPin, Plane } from 'lucide-react'
 
 import ErrorBanner from '../../components/common/ErrorBanner'
 import { getErrorMessage } from '../../services/api'
@@ -28,53 +28,76 @@ const ForgotPassword = () => {
   }
 
   return (
-    <main className="auth-screen auth-screen-login">
+    <main className="auth-screen-split auth-screen-forgot">
       <section className="auth-hero">
-        <div className="brand-mark">
-          <ShieldAlert size={24} />
+        <div className="auth-hero-header">
+          <Link to="/login" className="auth-brand-badge">
+            <MapPin size={20} />
+            <span>Yourz Itinerary</span>
+          </Link>
         </div>
-        <p className="auth-kicker">Pemulihan Akun</p>
-        <h1>Lupa Kata Sandi?</h1>
-        <p>Jangan panik! Cukup masukkan alamat email Anda, dan kami akan segera mengirimkan tautan ajaib untuk mengatur ulang kata sandi Anda.</p>
+
+        <div className="auth-hero-body">
+          <p className="auth-kicker">Pemulihan akun</p>
+          <h1>Kembali ke rencana perjalanan.</h1>
+          <p>Masukkan email akunmu untuk menerima instruksi reset password.</p>
+        </div>
+
+        <div className="auth-route" aria-hidden="true">
+          <span className="auth-route-track" />
+          <span className="auth-route-point start">
+            <MapPin size={14} />
+          </span>
+          <span className="auth-route-point middle">
+            <MapPin size={14} />
+          </span>
+          <span className="auth-route-point end">
+            <MapPin size={14} />
+          </span>
+          <span className="auth-route-traveler">
+            <Plane size={18} />
+          </span>
+        </div>
       </section>
 
-      <form className="auth-card" onSubmit={handleSubmit}>
-        <div className="auth-card-header">
-          <div className="auth-card-icon">
-            <KeyRound size={20} />
+      <div className="auth-form-wrapper">
+        <form className="auth-card" onSubmit={handleSubmit}>
+          <div className="auth-card-header">
+            <div>
+              <p className="auth-kicker">Reset password</p>
+              <h2>Pulihkan akun</h2>
+            </div>
           </div>
-          <div>
-            <p className="auth-kicker">Lupa Password</p>
-            <h2>Atur ulang sandi</h2>
+
+          <ErrorBanner message={error} />
+          {message && <div className="success-banner">{message}</div>}
+
+          <div className="auth-fields">
+            <label>
+              Email
+              <input
+                autoComplete="email"
+                maxLength={254}
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="nama@email.com"
+                required
+              />
+            </label>
           </div>
-        </div>
 
-        <ErrorBanner message={error} />
-        {message && <div className="success-banner">{message}</div>}
-        
-        <div className="auth-fields">
-          <label>
-            Alamat Email
-            <input 
-              type="email" 
-              value={email} 
-              onChange={(event) => setEmail(event.target.value)} 
-              placeholder="nama@email.com"
-              required 
-            />
-          </label>
-        </div>
+          <button className="button-primary button-auth-submit" disabled={submitting} type="submit">
+            {submitting ? 'Mengirim...' : 'Kirim instruksi'}
+          </button>
 
-        <button className="button-primary" disabled={submitting} type="submit">
-          {submitting ? 'Mengirim tautan...' : 'Kirim instruksi'}
-        </button>
-        
-        <div className="auth-meta-row">
-          <p className="auth-link">
-            Ingat password Anda? <Link to="/login">Kembali masuk</Link>
-          </p>
-        </div>
-      </form>
+          <div className="auth-footer-prompt">
+            <Link to="/login" className="auth-footer-link">
+              Kembali ke halaman masuk
+            </Link>
+          </div>
+        </form>
+      </div>
     </main>
   )
 }
