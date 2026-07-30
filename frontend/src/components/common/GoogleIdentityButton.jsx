@@ -87,7 +87,7 @@ const GoogleIdentityButton = ({ disabled = false, label, onCredential, onError, 
         text,
         shape: 'pill',
         size: 'large',
-        width: 320,
+        width: Math.min(320, containerRef.current.clientWidth),
         logo_alignment: 'left',
       })
       setAvailable(true)

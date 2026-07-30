@@ -128,13 +128,13 @@ const DayTimeline = ({ days = [], currency = 'IDR', canEdit = true, memberNameBy
                             {item.created_at && (
                               <span className="item-audit" title="Dibuat oleh">
                                 <Plus size={11} />
-                                {memberNameByUserId[item.created_by] || 'member'} • {formatShortDateTime(item.created_at)}
+                                Dibuat {memberNameByUserId[item.created_by] || 'member'} • {formatShortDateTime(item.created_at)}
                               </span>
                             )}
                             {item.updated_at && (
                               <span className="item-audit" title="Diubah oleh">
                                 <Pencil size={11} />
-                                {memberNameByUserId[item.updated_by] || 'member'} • {formatShortDateTime(item.updated_at)}
+                                Diubah {memberNameByUserId[item.updated_by] || 'member'} • {formatShortDateTime(item.updated_at)}
                               </span>
                             )}
                           </div>

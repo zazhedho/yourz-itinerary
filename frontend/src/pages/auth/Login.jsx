@@ -1,4 +1,4 @@
-import { LockKeyhole, MapPin } from 'lucide-react'
+import { Eye, EyeOff, MapPin, Plane } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
@@ -6,6 +6,7 @@ import ErrorBanner from '../../components/common/ErrorBanner'
 import GoogleIdentityButton from '../../components/common/GoogleIdentityButton'
 import { useAuth } from '../../hooks/useAuth'
 import useRegisterStatus from '../../hooks/useRegisterStatus'
+import { sanitizeNoWhitespaceInput } from '../../utils/inputSanitizer'
 import { getGoogleClientId } from '../../utils/runtimeConfig'
 
 const Login = () => {
@@ -13,6 +14,7 @@ const Login = () => {
   const { enabled: registerEnabled } = useRegisterStatus()
   const navigate = useNavigate()
   const [form, setForm] = useState({ identifier: '', password: '' })
+  const [showPassword, setShowPassword] = useState(false)
   const [googleError, setGoogleError] = useState('')
   const [googleSubmitting, setGoogleSubmitting] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -34,79 +36,127 @@ const Login = () => {
     if (ok) navigate('/trips', { replace: true })
   }
 
+  const handleChange = (event) => {
+    const { name, value } = event.target
+    setForm((current) => ({
+      ...current,
+      [name]: name === 'identifier' ? sanitizeNoWhitespaceInput(value) : value,
+    }))
+  }
+
   return (
-    <main className="auth-screen auth-screen-login">
+    <main className="auth-screen-split auth-screen-login">
       <section className="auth-hero">
-        <div className="brand-mark">
-          <MapPin size={24} />
+        <div className="auth-hero-header">
+          <Link to="/login" className="auth-brand-badge">
+            <MapPin size={20} />
+            <span>Yourz Itinerary</span>
+          </Link>
         </div>
-        <p className="auth-kicker">Yourz Itinerary</p>
-        <h1>Rencanakan trip bersama.</h1>
-        <p>Masuk untuk melihat itinerary, anggota, aktivitas, dan pin lokasi dalam satu tempat.</p>
-        <div className="auth-hero-pills" aria-hidden="true">
-          <span>Trips</span>
-          <span>Timeline</span>
-          <span>Maps</span>
+
+        <div className="auth-hero-body">
+          <p className="auth-kicker">Masuk</p>
+          <h1>Rencanakan perjalanan bersama.</h1>
+          <p>Kelola itinerary, anggota, aktivitas, dan lokasi dalam satu tempat.</p>
+        </div>
+
+        <div className="auth-route" aria-hidden="true">
+          <span className="auth-route-track" />
+          <span className="auth-route-point start">
+            <MapPin size={14} />
+          </span>
+          <span className="auth-route-point middle">
+            <MapPin size={14} />
+          </span>
+          <span className="auth-route-point end">
+            <MapPin size={14} />
+          </span>
+          <span className="auth-route-traveler">
+            <Plane size={18} />
+          </span>
         </div>
       </section>
 
-      <form className="auth-card" onSubmit={handleSubmit}>
-        <div className="auth-card-header">
-          <div className="auth-card-icon">
-            <LockKeyhole size={20} />
+      <div className="auth-form-wrapper">
+        <form className="auth-card" onSubmit={handleSubmit}>
+          <div className="auth-card-header">
+            <div>
+              <p className="auth-kicker">Masuk</p>
+              <h2>Selamat datang kembali</h2>
+            </div>
           </div>
-          <div>
-            <p className="auth-kicker">Masuk</p>
-            <h2>Selamat datang kembali</h2>
-          </div>
-        </div>
-        <ErrorBanner message={error || googleError} />
-        {googleClientId && (
-          <GoogleIdentityButton
-            disabled={submitting || googleSubmitting}
-            label="Lanjutkan dengan Google"
-            onCredential={handleGoogleCredential}
-            onError={setGoogleError}
-            text="signin_with"
-          />
-        )}
-        <div className="auth-fields">
-          <label>
-            Email atau username
-            <input
-              autoComplete="username"
-              placeholder="email@domain.com"
-              value={form.identifier}
-              onChange={(event) => setForm((current) => ({ ...current, identifier: event.target.value }))}
-              required
+
+          <ErrorBanner message={error || googleError} />
+
+          {googleClientId && (
+            <GoogleIdentityButton
+              disabled={submitting || googleSubmitting}
+              label="Lanjutkan dengan Google"
+              onCredential={handleGoogleCredential}
+              onError={setGoogleError}
+              text="signin_with"
             />
-          </label>
-          <label>
-            Password
-            <input
-              autoComplete="current-password"
-              placeholder="Password"
-              type="password"
-              value={form.password}
-              onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
-              required
-            />
-          </label>
-        </div>
-        <button className="button-primary" disabled={submitting} type="submit">
-          {submitting ? 'Masuk...' : 'Masuk'}
-        </button>
-        <div className="auth-meta-row">
-          {registerEnabled !== false && (
-            <p className="auth-link">
-              Belum punya akun? <Link to="/register">Daftar</Link>
-            </p>
           )}
-          <p className="auth-link">
-            <Link to="/forgot-password">Lupa password?</Link>
-          </p>
-        </div>
-      </form>
+
+          <div className="auth-fields">
+            <label className="input-field-group">
+              <span>Email atau username</span>
+              <input
+                autoComplete="username"
+                maxLength={100}
+                name="identifier"
+                placeholder="email@domain.com"
+                value={form.identifier}
+                onChange={handleChange}
+                required
+              />
+            </label>
+
+            <label className="input-field-group">
+              <div className="label-with-action">
+                <span>Password</span>
+                <Link to="/forgot-password" className="forgot-password-link">
+                  Lupa password?
+                </Link>
+              </div>
+              <div className="password-field">
+                <input
+                  autoComplete="current-password"
+                  maxLength={64}
+                  name="password"
+                  placeholder="Masukkan password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={form.password}
+                  onChange={handleChange}
+                  required
+                />
+                <button
+                  type="button"
+                  className="password-toggle-btn"
+                  onClick={() => setShowPassword(!showPassword)}
+                  title={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </label>
+          </div>
+
+          <button className="button-primary button-auth-submit" disabled={submitting} type="submit">
+            {submitting ? 'Memproses...' : 'Masuk'}
+          </button>
+
+          {registerEnabled !== false && (
+            <div className="auth-footer-prompt">
+              <span>Belum punya akun?</span>{' '}
+              <Link to="/register" className="auth-footer-link">
+                Daftar sekarang
+              </Link>
+            </div>
+          )}
+        </form>
+      </div>
     </main>
   )
 }

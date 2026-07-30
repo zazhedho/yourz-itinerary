@@ -54,4 +54,14 @@ describe('Login', () => {
 
     expect(screen.queryByRole('button', { name: /lanjutkan dengan google/i })).not.toBeInTheDocument()
   })
+
+  it('does not allow whitespace in identifier', async () => {
+    const user = userEvent.setup()
+    renderLogin()
+
+    const identifier = screen.getByLabelText(/email atau username/i)
+    await user.type(identifier, ' zaqi @example.com ')
+
+    expect(identifier).toHaveValue('zaqi@example.com')
+  })
 })

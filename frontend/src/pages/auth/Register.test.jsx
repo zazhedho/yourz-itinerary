@@ -90,6 +90,22 @@ describe('Register', () => {
     expect(otpInput).toHaveValue('123456')
   })
 
+  it('normalizes whitespace in registration fields', async () => {
+    const user = userEvent.setup()
+    renderRegister()
+
+    const name = await screen.findByLabelText(/nama/i)
+    const email = screen.getByLabelText(/email/i)
+    const phone = screen.getByLabelText(/nomor hp/i)
+    await user.type(name, '  Zaqi   Akhana  ')
+    await user.type(email, ' zaqi @example.com ')
+    await user.type(phone, ' 628 123 456 ')
+
+    expect(name).toHaveValue('Zaqi Akhana')
+    expect(email).toHaveValue('zaqi@example.com')
+    expect(phone).toHaveValue('628123456')
+  })
+
   it('blocks OTP request when password requirements are not met', async () => {
     const user = userEvent.setup()
     renderRegister()

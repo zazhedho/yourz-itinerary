@@ -1,4 +1,4 @@
-import { ArrowLeft, MailCheck, MapPin, RefreshCw, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, Eye, EyeOff, MailCheck, MapPin, Plane, RefreshCw } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
@@ -16,6 +16,7 @@ import {
   passwordStrengthLabel,
   validatePassword,
 } from '../../utils/passwordValidation'
+import { sanitizeBlurInput, sanitizeLiveInput, sanitizeNoWhitespaceInput } from '../../utils/inputSanitizer'
 import { getGoogleClientId } from '../../utils/runtimeConfig'
 
 const isOTPRequiredError = (err) => getErrorMessage(err, '').toLowerCase().includes('otp_code is required')
@@ -40,6 +41,8 @@ const Register = () => {
   const { error: authError, googleLogin } = useAuth()
   const { enabled, otp_enabled: otpEnabled, loading, error: statusError } = useRegisterStatus()
   const [error, setError] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [googleError, setGoogleError] = useState('')
   const [googleSubmitting, setGoogleSubmitting] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -96,13 +99,25 @@ const Register = () => {
     sessionStorage.removeItem('register_otp_step')
     sessionStorage.removeItem('register_otp_cooldown')
   }
+
   const validation = validatePassword(form.password)
   const strength = passwordStrength(validation)
   const passwordMatches = form.confirm_password && form.password === form.confirm_password
   const googleClientId = getGoogleClientId()
 
   const handleChange = (event) => {
-    setForm((current) => ({ ...current, [event.target.name]: event.target.value }))
+    const { name, value } = event.target
+    let sanitized = value
+    if (name === 'name') sanitized = sanitizeLiveInput(value)
+    else if (name === 'email' || name === 'phone') sanitized = sanitizeNoWhitespaceInput(value)
+    setForm((current) => ({ ...current, [name]: sanitized }))
+  }
+
+  const handleBlur = (event) => {
+    const { name, value } = event.target
+    if (name === 'name') {
+      setForm((current) => ({ ...current, name: sanitizeBlurInput(value) }))
+    }
   }
 
   const handleOTPChange = (event) => {
@@ -111,6 +126,18 @@ const Register = () => {
   }
 
   const validateRegistrationDetails = () => {
+    if (!form.name.trim()) {
+      setError('Nama wajib diisi dan tidak boleh hanya spasi')
+      return false
+    }
+    if (!form.email.trim()) {
+      setError('Email wajib diisi dan tidak boleh hanya spasi')
+      return false
+    }
+    if (!form.phone.trim()) {
+      setError('Nomor HP wajib diisi dan tidak boleh hanya spasi')
+      return false
+    }
     if (!isPasswordValid(validation)) {
       setError('Password belum memenuhi semua syarat')
       return false
@@ -139,9 +166,13 @@ const Register = () => {
         return
       }
 
-      const payload = { ...form }
-      delete payload.confirm_password
-      if (!otpEnabled || !payload.otp_code.trim()) delete payload.otp_code
+      const payload = {
+        name: form.name.trim(),
+        email: form.email.trim(),
+        phone: form.phone.trim(),
+        password: form.password,
+        ...(form.otp_code.trim() ? { otp_code: form.otp_code.trim() } : {}),
+      }
       await authService.register(payload)
       sessionStorage.removeItem('register_form')
       sessionStorage.removeItem('register_otp_step')
@@ -200,173 +231,238 @@ const Register = () => {
   }
 
   return (
-    <main className="auth-screen auth-screen-register">
+    <main className="auth-screen-split auth-screen-register">
       <section className="auth-hero">
-        <div className="brand-mark">
-          <MapPin size={24} />
+        <div className="auth-hero-header">
+          <Link to="/login" className="auth-brand-badge">
+            <MapPin size={20} />
+            <span>Yourz Itinerary</span>
+          </Link>
         </div>
-        <p className="auth-kicker">Yourz Itinerary</p>
-        <h1>{otpStep ? 'Verifikasi email.' : 'Buat akun Yourz.'}</h1>
-        <p>
-          {otpStep
-            ? `Masukkan kode yang dikirim ke ${form.email}.`
-            : 'Akun member bisa membuat trip dan mengundang pasangan atau teman lewat email.'}
-        </p>
-        <div className="auth-hero-pills" aria-hidden="true">
-          <span>Collaborative</span>
-          <span>Mobile</span>
-          <span>Private</span>
+
+        <div className="auth-hero-body">
+          <p className="auth-kicker">{otpStep ? 'Verifikasi email' : 'Buat akun'}</p>
+          <h1>{otpStep ? 'Masukkan kode verifikasi.' : 'Mulai rencanakan perjalanan.'}</h1>
+          <p>
+            {otpStep
+              ? `Kode dikirim ke ${form.email}.`
+              : 'Susun itinerary dan kelola perjalanan bersama orang yang kamu undang.'}
+          </p>
+        </div>
+
+        <div className="auth-route" aria-hidden="true">
+          <span className="auth-route-track" />
+          <span className="auth-route-point start">
+            <MapPin size={14} />
+          </span>
+          <span className="auth-route-point middle">
+            <MapPin size={14} />
+          </span>
+          <span className="auth-route-point end">
+            <MapPin size={14} />
+          </span>
+          <span className="auth-route-traveler">
+            <Plane size={18} />
+          </span>
         </div>
       </section>
-      <form className="auth-card" onSubmit={handleSubmit}>
-        <div className="auth-card-header">
-          <div className="auth-card-icon">
-            <ShieldCheck size={20} />
-          </div>
-          <div>
-            <p className="auth-kicker">{otpStep ? 'Verifikasi' : 'Daftar'}</p>
-            <h2>{otpStep ? 'Cek email kamu' : 'Mulai dengan akun baru'}</h2>
-          </div>
-        </div>
-        <ErrorBanner message={error || authError || googleError} />
-        {!otpStep ? (
-          <>
-            {googleClientId && (
-              <GoogleIdentityButton
-                disabled={submitting || googleSubmitting}
-                label="Daftar dengan Google"
-                onCredential={handleGoogleCredential}
-                onError={setGoogleError}
-                text="signup_with"
-              />
-            )}
-            <div className="auth-fields">
-              <label>
-                Nama
-                <input name="name" placeholder="Nama lengkap" value={form.name} onChange={handleChange} required />
-              </label>
-              <label>
-                Email
-                <input
-                  autoComplete="email"
-                  name="email"
-                  placeholder="email@domain.com"
-                  type="email"
-                  value={form.email}
-                  onChange={handleChange}
-                  required
-                />
-              </label>
-              <label>
-                Nomor HP
-                <input
-                  autoComplete="tel"
-                  inputMode="tel"
-                  name="phone"
-                  placeholder="628123456789"
-                  value={form.phone}
-                  onChange={handleChange}
-                  required
-                />
-              </label>
-              <label>
-                Password
-                <input
-                  autoComplete="new-password"
-                  name="password"
-                  placeholder="Minimal 8 karakter"
-                  type="password"
-                  value={form.password}
-                  onChange={handleChange}
-                  required
-                />
-              </label>
+
+      <div className="auth-form-wrapper">
+        <form className="auth-card" onSubmit={handleSubmit}>
+          <div className="auth-card-header">
+            <div>
+              <p className="auth-kicker">{otpStep ? 'Verifikasi' : 'Daftar'}</p>
+              <h2>{otpStep ? 'Cek email kamu' : 'Buat akun baru'}</h2>
             </div>
-            {form.password && (
-              <div className="password-validation-card">
-                <div className="password-meter-row">
-                  <div className="password-meter">
-                    <span style={{ width: `${(strength / 5) * 100}%` }} />
+          </div>
+
+          <ErrorBanner message={error || authError || googleError} />
+
+          {!otpStep ? (
+            <>
+              {googleClientId && (
+                <GoogleIdentityButton
+                  disabled={submitting || googleSubmitting}
+                  label="Daftar dengan Google"
+                  onCredential={handleGoogleCredential}
+                  onError={setGoogleError}
+                  text="signup_with"
+                />
+              )}
+
+              <div className="auth-fields">
+                <label className="input-field-group">
+                  <span>Nama lengkap</span>
+                  <input
+                    maxLength={100}
+                    name="name"
+                    placeholder="Nama lengkap kamu"
+                    value={form.name}
+                    onBlur={handleBlur}
+                    onChange={handleChange}
+                    required
+                  />
+                </label>
+
+                <label className="input-field-group">
+                  <span>Email</span>
+                  <input
+                    autoComplete="email"
+                    maxLength={254}
+                    name="email"
+                    placeholder="email@domain.com"
+                    type="email"
+                    value={form.email}
+                    onChange={handleChange}
+                    required
+                  />
+                </label>
+
+                <label className="input-field-group">
+                  <span>Nomor HP</span>
+                  <input
+                    autoComplete="tel"
+                    inputMode="tel"
+                    maxLength={15}
+                    name="phone"
+                    placeholder="628123456789"
+                    value={form.phone}
+                    onChange={handleChange}
+                    required
+                  />
+                </label>
+
+                <label className="input-field-group">
+                  <span>Password</span>
+                  <div className="password-field">
+                    <input
+                      autoComplete="new-password"
+                      maxLength={64}
+                      name="password"
+                      placeholder="Minimal 8 karakter"
+                      type={showPassword ? 'text' : 'password'}
+                      value={form.password}
+                      onChange={handleChange}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle-btn"
+                      onClick={() => setShowPassword(!showPassword)}
+                      title={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                      tabIndex={-1}
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
                   </div>
-                  <strong>{passwordStrengthLabel(strength)}</strong>
+                </label>
+
+                {form.password && (
+                  <div className="password-validation-card">
+                    <div className="password-meter-row">
+                      <div className="password-meter">
+                        <span style={{ width: `${(strength / 5) * 100}%` }} />
+                      </div>
+                      <strong>{passwordStrengthLabel(strength)}</strong>
+                    </div>
+                    <div className="password-requirements">
+                      {passwordRequirements.map(([key, label]) => (
+                        <span className={validation[key] ? 'valid' : ''} key={key}>
+                          {label}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <label className="input-field-group">
+                  <span>Konfirmasi password</span>
+                  <div className="password-field">
+                    <input
+                      autoComplete="new-password"
+                      maxLength={64}
+                      name="confirm_password"
+                      placeholder="Ulangi password"
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      value={form.confirm_password}
+                      onChange={handleChange}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle-btn"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      title={showConfirmPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                      tabIndex={-1}
+                    >
+                      {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </label>
+
+                {form.confirm_password && (
+                  <div className={`password-match-note ${passwordMatches ? 'valid' : ''}`}>
+                    {passwordMatches ? 'Password sama' : 'Password belum sama'}
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="otp-step-container">
+              <div className="otp-spotlight">
+                <div className="otp-icon-shell">
+                  <MailCheck size={28} />
                 </div>
-                <div className="password-requirements">
-                  {passwordRequirements.map(([key, label]) => (
-                    <span className={validation[key] ? 'valid' : ''} key={key}>
-                      {label}
-                    </span>
-                  ))}
+                <div className="otp-copy">
+                  <p className="auth-kicker">Kode verifikasi</p>
+                  <h3>Kami sudah mengirim OTP</h3>
+                  <p>Masukkan 6 digit kode yang dikirim ke email berikut.</p>
+                  <span>{form.email}</span>
                 </div>
               </div>
-            )}
-            <label>
-              Konfirmasi password
-              <input
-                autoComplete="new-password"
-                name="confirm_password"
-                placeholder="Ulangi password"
-                type="password"
-                value={form.confirm_password}
-                onChange={handleChange}
-                required
-              />
-            </label>
-            {form.confirm_password && (
-              <div className={`password-match-note ${passwordMatches ? 'valid' : ''}`}>
-                {passwordMatches ? 'Password sama' : 'Password belum sama'}
-              </div>
-            )}
-          </>
-        ) : (
-          <div className="otp-step-container">
-            <div className="otp-spotlight">
-              <div className="otp-icon-shell">
-                <MailCheck size={28} />
-              </div>
-              <div className="otp-copy">
-                <p className="auth-kicker">Kode verifikasi</p>
-                <h3>Kami sudah mengirim OTP</h3>
-                <p>Masukkan 6 digit kode yang dikirim ke email berikut.</p>
-                <span>{form.email}</span>
+              <label className="otp-code-field">
+                <span>Kode OTP</span>
+                <input
+                  autoComplete="one-time-code"
+                  inputMode="numeric"
+                  maxLength={6}
+                  name="otp_code"
+                  value={form.otp_code}
+                  onChange={handleOTPChange}
+                  placeholder="000000"
+                  required
+                />
+              </label>
+              <div className="otp-actions">
+                <button
+                  type="button"
+                  className={`button-secondary otp-resend-button ${cooldown > 0 ? 'cooldown' : ''}`}
+                  onClick={handleResendOTP}
+                  disabled={cooldown > 0}
+                >
+                  <RefreshCw size={16} />
+                  {cooldown > 0 ? `Kirim ulang ${cooldown}s` : 'Kirim ulang'}
+                </button>
+                <button className="button-text" onClick={handleBackToDetails} type="button">
+                  <ArrowLeft size={16} />
+                  Ubah email
+                </button>
               </div>
             </div>
-            <label className="otp-code-field">
-              <span>Kode OTP</span>
-              <input
-                autoComplete="one-time-code"
-                inputMode="numeric"
-                maxLength={6}
-                name="otp_code"
-                value={form.otp_code}
-                onChange={handleOTPChange}
-                placeholder="000000"
-                required
-              />
-            </label>
-            <div className="otp-actions">
-              <button
-                type="button"
-                className={`button-secondary otp-resend-button ${cooldown > 0 ? 'cooldown' : ''}`}
-                onClick={handleResendOTP}
-                disabled={cooldown > 0}
-              >
-                <RefreshCw size={16} />
-                {cooldown > 0 ? `Kirim ulang ${cooldown}s` : 'Kirim ulang'}
-              </button>
-              <button className="button-text" onClick={handleBackToDetails} type="button">
-                <ArrowLeft size={16} />
-                Ubah email
-              </button>
-            </div>
+          )}
+
+          <button className="button-primary button-auth-submit" disabled={submitting} type="submit">
+            {submitting ? (otpStep ? 'Memverifikasi...' : 'Memproses...') : otpStep ? 'Verifikasi dan daftar' : 'Daftar'}
+          </button>
+
+          <div className="auth-footer-prompt">
+            <span>Sudah punya akun?</span>{' '}
+            <Link to="/login" className="auth-footer-link">
+              Masuk ke akun
+            </Link>
           </div>
-        )}
-        <button className="button-primary" disabled={submitting} type="submit">
-          {submitting ? (otpStep ? 'Memverifikasi...' : 'Memproses...') : otpStep ? 'Verifikasi dan daftar' : 'Daftar'}
-        </button>
-        <p className="auth-link">
-          Sudah punya akun? <Link to="/login">Masuk</Link>
-        </p>
-      </form>
+        </form>
+      </div>
     </main>
   )
 }
