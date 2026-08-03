@@ -58,6 +58,38 @@ func TestGoogleWeatherProviderMapsDailyForecast(t *testing.T) {
 	}
 }
 
+func TestGoogleWeatherProviderMapsHourlyForecastWithoutPagination(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/v1/forecast/hours:lookup" || r.URL.Query().Get("hours") != "24" || r.URL.Query().Get("pageToken") != "" {
+			t.Fatalf("unexpected hourly request: %s", r.URL.String())
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{
+  "timeZone": {"id": "Asia/Jakarta"},
+  "forecastHours": [{
+    "interval": {"startTime": "2026-08-03T07:00:00Z", "endTime": "2026-08-03T08:00:00Z"},
+    "weatherCondition": {"type": "RAIN", "description": {"text": "Hujan"}, "iconBaseUri": "https://maps.gstatic.com/weather/v1/rain"},
+    "temperature": {"degrees": 30.4},
+    "feelsLikeTemperature": {"degrees": 34.1},
+    "precipitation": {"probability": {"percent": 60}},
+    "relativeHumidity": 80,
+    "wind": {"speed": {"value": 10, "unit": "KILOMETERS_PER_HOUR"}}
+  }],
+  "nextPageToken": "must-not-be-used"
+}`))
+	}))
+	defer server.Close()
+
+	provider := NewGoogleWeatherProvider("secret", server.URL, server.Client())
+	got, err := provider.GetHourlyForecast(context.Background(), -6.1754, 106.8272, time.Date(2026, time.August, 3, 7, 0, 0, 0, time.UTC))
+	if err != nil || len(got) != 1 {
+		t.Fatalf("get hourly: %+v err=%v", got, err)
+	}
+	if got[0].ForecastTime.Format(time.RFC3339) != "2026-08-03T07:00:00Z" || got[0].TemperatureC != 30.4 || got[0].FeelsLikeC == nil || *got[0].FeelsLikeC != 34.1 || got[0].PrecipitationProbability != 60 || got[0].TimeZone != "Asia/Jakarta" {
+		t.Fatalf("unexpected hourly forecast: %+v", got[0])
+	}
+}
+
 func TestGoogleWeatherProviderRejectsBadResponses(t *testing.T) {
 	cases := []struct {
 		name string

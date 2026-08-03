@@ -47,6 +47,13 @@ type googleForecastResponse struct {
 	} `json:"timeZone"`
 }
 
+type googleForecastHoursResponse struct {
+	ForecastHours []googleForecastHour `json:"forecastHours"`
+	TimeZone      struct {
+		ID string `json:"id"`
+	} `json:"timeZone"`
+}
+
 type googleForecastDay struct {
 	DisplayDate googleDate        `json:"displayDate"`
 	Daytime     googleDayPart     `json:"daytimeForecast"`
@@ -54,6 +61,33 @@ type googleForecastDay struct {
 	Max         googleTemperature `json:"maxTemperature"`
 	FeelsMin    googleTemperature `json:"feelsLikeMinTemperature"`
 	FeelsMax    googleTemperature `json:"feelsLikeMaxTemperature"`
+}
+
+type googleForecastHour struct {
+	Interval struct {
+		StartTime time.Time `json:"startTime"`
+	} `json:"interval"`
+	Condition struct {
+		IconBaseURI string `json:"iconBaseUri"`
+		Description struct {
+			Text string `json:"text"`
+		} `json:"description"`
+		Type string `json:"type"`
+	} `json:"weatherCondition"`
+	Temperature          googleTemperature `json:"temperature"`
+	FeelsLikeTemperature googleTemperature `json:"feelsLikeTemperature"`
+	Precipitation        struct {
+		Probability struct {
+			Percent int `json:"percent"`
+		} `json:"probability"`
+	} `json:"precipitation"`
+	RelativeHumidity int `json:"relativeHumidity"`
+	Wind             struct {
+		Speed struct {
+			Unit  string  `json:"unit"`
+			Value float64 `json:"value"`
+		} `json:"speed"`
+	} `json:"wind"`
 }
 
 type googleDate struct {
@@ -158,6 +192,72 @@ func (p *GoogleWeatherProvider) GetDailyForecast(ctx context.Context, latitude, 
 	}
 	logger.WriteLog(logger.LogLevelDebug, fmt.Sprintf("[GoogleWeather] latency_ms=%d status=%d outcome=out_of_range", latency, response.StatusCode))
 	return domainweather.Forecast{}, domainweather.ErrOutOfRange
+}
+
+func (p *GoogleWeatherProvider) GetHourlyForecast(ctx context.Context, latitude, longitude float64, _ time.Time) ([]domainweather.HourlyForecast, error) {
+	query := url.Values{
+		"key":                []string{p.APIKey},
+		"location.latitude":  []string{strconv.FormatFloat(latitude, 'f', -1, 64)},
+		"location.longitude": []string{strconv.FormatFloat(longitude, 'f', -1, 64)},
+		"unitsSystem":        []string{"METRIC"},
+		"languageCode":       []string{"id"},
+		"hours":              []string{"24"},
+	}
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, p.BaseURL+"/v1/forecast/hours:lookup?"+query.Encode(), nil)
+	if err != nil {
+		return nil, errors.New("failed to prepare weather provider request")
+	}
+	started := time.Now()
+	response, err := p.Client.Do(request)
+	if err != nil {
+		logger.WriteLog(logger.LogLevelDebug, fmt.Sprintf("[GoogleWeather] hourly latency_ms=%d outcome=provider_unavailable", time.Since(started).Milliseconds()))
+		return nil, errors.New("weather provider hourly request failed")
+	}
+	defer response.Body.Close()
+	latency := time.Since(started).Milliseconds()
+	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
+		logger.WriteLog(logger.LogLevelDebug, fmt.Sprintf("[GoogleWeather] hourly latency_ms=%d status=%d outcome=provider_unavailable", latency, response.StatusCode))
+		return nil, fmt.Errorf("weather provider hourly returned status %d", response.StatusCode)
+	}
+
+	var payload googleForecastHoursResponse
+	if err := json.NewDecoder(io.LimitReader(response.Body, 1<<20)).Decode(&payload); err != nil {
+		logger.WriteLog(logger.LogLevelDebug, fmt.Sprintf("[GoogleWeather] hourly latency_ms=%d status=%d outcome=provider_unavailable", latency, response.StatusCode))
+		return nil, ErrMalformedProviderResponse
+	}
+	forecasts := make([]domainweather.HourlyForecast, 0, len(payload.ForecastHours))
+	for _, hour := range payload.ForecastHours {
+		if hour.Interval.StartTime.IsZero() {
+			continue
+		}
+		forecast := domainweather.HourlyForecast{
+			ForecastTime:             hour.Interval.StartTime,
+			TimeZone:                 payload.TimeZone.ID,
+			ConditionCode:            hour.Condition.Type,
+			ConditionDescription:     hour.Condition.Description.Text,
+			IconURI:                  weatherIconURI(hour.Condition.IconBaseURI),
+			PrecipitationProbability: hour.Precipitation.Probability.Percent,
+			HumidityPercent:          hour.RelativeHumidity,
+			WindSpeedKPH:             hour.Wind.Speed.Value,
+		}
+		if hour.Temperature.Degrees != nil {
+			forecast.TemperatureC = *hour.Temperature.Degrees
+		}
+		if hour.FeelsLikeTemperature.Degrees != nil {
+			value := *hour.FeelsLikeTemperature.Degrees
+			forecast.FeelsLikeC = &value
+		}
+		if strings.EqualFold(hour.Wind.Speed.Unit, "MILES_PER_HOUR") {
+			forecast.WindSpeedKPH *= 1.609344
+		}
+		forecasts = append(forecasts, forecast)
+	}
+	if len(forecasts) == 0 {
+		logger.WriteLog(logger.LogLevelDebug, fmt.Sprintf("[GoogleWeather] hourly latency_ms=%d status=%d outcome=out_of_range", latency, response.StatusCode))
+		return nil, domainweather.ErrOutOfRange
+	}
+	logger.WriteLog(logger.LogLevelDebug, fmt.Sprintf("[GoogleWeather] hourly latency_ms=%d status=%d outcome=available", latency, response.StatusCode))
+	return forecasts, nil
 }
 
 func weatherIconURI(base string) string {

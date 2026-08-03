@@ -43,6 +43,17 @@ export const formatTime = (timeString) => {
   return timeString
 }
 
+export const formatWeatherTime = (dateString, timeZone) => {
+  const date = new Date(dateString)
+  if (!dateString || Number.isNaN(date.getTime())) return ''
+  return date.toLocaleTimeString('id-ID', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: timeZone || undefined,
+  })
+}
+
 export const formatShortDateTime = (dateString) => {
   if (!dateString) return ''
   try {

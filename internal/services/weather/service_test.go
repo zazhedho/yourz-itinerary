@@ -10,6 +10,7 @@ import (
 	domainitem "yourz-itinerary/internal/domain/itineraryitem"
 	domainmember "yourz-itinerary/internal/domain/tripmember"
 	domainweather "yourz-itinerary/internal/domain/weather"
+	interfaceweather "yourz-itinerary/internal/interfaces/weather"
 	serviceshared "yourz-itinerary/internal/services/shared"
 	"yourz-itinerary/pkg/filter"
 
@@ -87,8 +88,12 @@ func (f *weatherMemberRepoFake) ListByTrip(context.Context, string) ([]domainmem
 
 type weatherProviderFake struct {
 	calls            int
+	hourlyCalls      int
 	err              error
+	hourlyErr        error
 	errorsByLatitude map[float64]error
+	hourly           []domainweather.HourlyForecast
+	timeZone         string
 }
 
 func (f *weatherProviderFake) GetDailyForecast(_ context.Context, latitude, _ float64, targetDate time.Time) (domainweather.Forecast, error) {
@@ -99,13 +104,64 @@ func (f *weatherProviderFake) GetDailyForecast(_ context.Context, latitude, _ fl
 	if f.err != nil {
 		return domainweather.Forecast{}, f.err
 	}
-	return domainweather.Forecast{ForecastDate: targetDate.UTC().Format("2006-01-02"), MinTemperatureC: 24, MaxTemperatureC: 31}, nil
+	return domainweather.Forecast{ForecastDate: targetDate.UTC().Format("2006-01-02"), TimeZone: f.timeZone, MinTemperatureC: 24, MaxTemperatureC: 31}, nil
+}
+
+func (f *weatherProviderFake) GetHourlyForecast(context.Context, float64, float64, time.Time) ([]domainweather.HourlyForecast, error) {
+	f.hourlyCalls++
+	if f.hourlyErr != nil {
+		return nil, f.hourlyErr
+	}
+	return f.hourly, nil
 }
 
 type weatherUsageFake struct {
 	allowed  bool
 	sequence []bool
 	calls    int
+}
+
+type weatherCacheFake struct {
+	daily       map[string]domainweather.Forecast
+	hourly      map[string][]domainweather.HourlyForecast
+	unavailable bool
+}
+
+func (f *weatherCacheFake) GetDaily(_ context.Context, key string) (domainweather.Forecast, error) {
+	if f.unavailable {
+		return domainweather.Forecast{}, interfaceweather.ErrCacheUnavailable
+	}
+	if forecast, ok := f.daily[key]; ok {
+		return forecast, nil
+	}
+	return domainweather.Forecast{}, interfaceweather.ErrCacheMiss
+}
+
+func (f *weatherCacheFake) SetDaily(_ context.Context, key string, forecast domainweather.Forecast, _ time.Duration) error {
+	if f.daily == nil {
+		f.daily = map[string]domainweather.Forecast{}
+	}
+	f.daily[key] = forecast
+	return nil
+}
+
+func (f *weatherCacheFake) GetHourly(_ context.Context, key string) ([]domainweather.HourlyForecast, error) {
+	if f.unavailable {
+		return nil, interfaceweather.ErrCacheUnavailable
+	}
+	forecasts, ok := f.hourly[key]
+	if !ok {
+		return nil, interfaceweather.ErrCacheMiss
+	}
+	return forecasts, nil
+}
+
+func (f *weatherCacheFake) SetHourly(_ context.Context, key string, forecasts []domainweather.HourlyForecast, _ time.Duration) error {
+	if f.hourly == nil {
+		f.hourly = map[string][]domainweather.HourlyForecast{}
+	}
+	f.hourly[key] = forecasts
+	return nil
 }
 
 func (f *weatherUsageFake) Reserve(context.Context) (bool, int64, error) {
@@ -277,5 +333,120 @@ func TestWeatherServiceAggregatesMixedStatusesDeterministically(t *testing.T) {
 		if err != nil || got.Status != string(domainweather.StatusLimitReached) || got.Items[0].Status != string(domainweather.StatusProviderUnavailable) || got.Items[1].Status != string(domainweather.StatusLimitReached) {
 			t.Fatalf("mixed status changed on iteration %d: %+v err=%v", i, got, err)
 		}
+	}
+}
+
+func TestWeatherServiceCacheHitSkipsUsageAndProvider(t *testing.T) {
+	provider := &weatherProviderFake{}
+	usage := &weatherUsageFake{allowed: true}
+	cache := &weatherCacheFake{daily: map[string]domainweather.Forecast{
+		"weather:daily:2026-08-03:1.0000:2.0000": {ForecastDate: weatherTestNow.Format("2006-01-02"), TimeZone: "Asia/Jakarta", MinTemperatureC: 24, MaxTemperatureC: 31},
+	}}
+	service := weatherServiceFixture(t, []domainitem.ItineraryItem{weatherItem("item-1", 1, 2)}, provider, usage)
+	service.Cache = cache
+	got, err := service.GetByDay(context.Background(), "user-1", "day-1")
+	if err != nil || got.Status != string(domainweather.StatusAvailable) || provider.calls != 0 || usage.calls != 0 {
+		t.Fatalf("cache did not bypass provider: %+v provider=%d usage=%d err=%v", got, provider.calls, usage.calls, err)
+	}
+}
+
+func TestWeatherServiceHourlyCacheHitSkipsUsageAndProvider(t *testing.T) {
+	start := "20:00"
+	item := weatherItem("item-1", 1, 2)
+	item.StartTime = &start
+	cache := &weatherCacheFake{
+		daily: map[string]domainweather.Forecast{
+			"weather:daily:2026-08-03:1.0000:2.0000": {ForecastDate: "2026-08-03", TimeZone: "Asia/Jakarta", MinTemperatureC: 24, MaxTemperatureC: 31},
+		},
+		hourly: map[string][]domainweather.HourlyForecast{
+			"weather:hourly:20260803T12Z:1.0000:2.0000": {{ForecastTime: time.Date(2026, time.August, 3, 13, 0, 0, 0, time.UTC), TimeZone: "Asia/Jakarta", TemperatureC: 30}},
+		},
+	}
+	provider := &weatherProviderFake{}
+	usage := &weatherUsageFake{allowed: true}
+	service := weatherServiceFixture(t, []domainitem.ItineraryItem{item}, provider, usage)
+	service.Cache = cache
+
+	got, err := service.GetByDay(context.Background(), "user-1", "day-1")
+	if err != nil || got.Items[0].ForecastType != domainweather.ForecastTypeHourly || provider.calls != 0 || provider.hourlyCalls != 0 || usage.calls != 0 {
+		t.Fatalf("hourly cache did not bypass usage/provider: %+v provider=%d hourly=%d usage=%d err=%v", got, provider.calls, provider.hourlyCalls, usage.calls, err)
+	}
+}
+
+func TestDailyCacheTTLUsesLocationDate(t *testing.T) {
+	now := time.Date(2026, time.August, 3, 18, 0, 0, 0, time.UTC)
+	if got := dailyCacheTTL(time.Date(2026, time.August, 4, 0, 0, 0, 0, time.UTC), now, "Asia/Jakarta"); got != time.Hour {
+		t.Fatalf("today in location should use one-hour TTL, got %s", got)
+	}
+}
+
+func TestWeatherServiceHourlyUsesOneCallAndFallsBackToDaily(t *testing.T) {
+	start := "20:00"
+	provider := &weatherProviderFake{
+		timeZone: "Asia/Jakarta",
+		hourly: []domainweather.HourlyForecast{{
+			ForecastTime: time.Date(2026, time.August, 3, 13, 0, 0, 0, time.UTC),
+			TimeZone:     "Asia/Jakarta", ConditionCode: "RAIN", ConditionDescription: "Hujan", TemperatureC: 30,
+		}},
+	}
+	usage := &weatherUsageFake{allowed: true}
+	items := []domainitem.ItineraryItem{weatherItem("one", 1, 2), weatherItem("two", 1, 2)}
+	items[0].StartTime = &start
+	items[1].StartTime = &start
+	service := weatherServiceFixture(t, items, provider, usage)
+	got, err := service.GetByDay(context.Background(), "user-1", "day-1")
+	if err != nil || provider.calls != 1 || provider.hourlyCalls != 1 || usage.calls != 2 || got.Items[0].ForecastType != domainweather.ForecastTypeHourly || got.Items[1].ForecastType != domainweather.ForecastTypeHourly {
+		t.Fatalf("hourly enrichment failed: %+v provider=%d hourly=%d usage=%d err=%v", got, provider.calls, provider.hourlyCalls, usage.calls, err)
+	}
+
+	provider = &weatherProviderFake{timeZone: "Asia/Jakarta", hourlyErr: errors.New("hourly unavailable")}
+	usage = &weatherUsageFake{allowed: true}
+	items = []domainitem.ItineraryItem{weatherItem("fallback", 1, 2)}
+	items[0].StartTime = &start
+	service = weatherServiceFixture(t, items, provider, usage)
+	got, err = service.GetByDay(context.Background(), "user-1", "day-1")
+	if err != nil || provider.hourlyCalls != 1 || got.Items[0].ForecastType != domainweather.ForecastTypeDaily || got.Items[0].Status != string(domainweather.StatusAvailable) {
+		t.Fatalf("hourly failure replaced daily forecast: %+v hourly=%d err=%v", got, provider.hourlyCalls, err)
+	}
+}
+
+func TestWeatherServiceHourlyEligibilityAndTimezone(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		timeZone string
+		date     time.Time
+		start    string
+		wantCall bool
+	}{
+		{name: "missing start", timeZone: "Asia/Jakarta", date: weatherTestNow, wantCall: false},
+		{name: "over 24 hours", timeZone: "Asia/Jakarta", date: weatherTestNow.AddDate(0, 0, 1), start: "20:00", wantCall: false},
+		{name: "local timezone boundary", timeZone: "America/Los_Angeles", date: weatherTestNow, start: "06:00", wantCall: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			provider := &weatherProviderFake{timeZone: tc.timeZone, hourly: []domainweather.HourlyForecast{{
+				ForecastTime: time.Date(2026, time.August, 3, 13, 0, 0, 0, time.UTC), TimeZone: tc.timeZone, TemperatureC: 30,
+			}}}
+			usage := &weatherUsageFake{allowed: true}
+			item := weatherItem("item-1", 1, 2)
+			if tc.start != "" {
+				item.StartTime = &tc.start
+			}
+			service := weatherServiceFixtureAt(t, []domainitem.ItineraryItem{item}, provider, usage, tc.date)
+			got, err := service.GetByDay(context.Background(), "user-1", "day-1")
+			if err != nil || (provider.hourlyCalls == 1) != tc.wantCall {
+				t.Fatalf("hourly eligibility mismatch: %+v calls=%d wantCall=%t err=%v", got, provider.hourlyCalls, tc.wantCall, err)
+			}
+		})
+	}
+}
+
+func TestWeatherServiceFailsClosedWhenCacheUnavailable(t *testing.T) {
+	provider := &weatherProviderFake{}
+	usage := &weatherUsageFake{allowed: true}
+	service := weatherServiceFixture(t, []domainitem.ItineraryItem{weatherItem("item-1", 1, 2)}, provider, usage)
+	service.Cache = &weatherCacheFake{unavailable: true}
+	got, err := service.GetByDay(context.Background(), "user-1", "day-1")
+	if err != nil || got.Status != string(domainweather.StatusProviderUnavailable) || provider.calls != 0 || usage.calls != 0 {
+		t.Fatalf("cache outage did not fail closed: %+v provider=%d usage=%d err=%v", got, provider.calls, usage.calls, err)
 	}
 }

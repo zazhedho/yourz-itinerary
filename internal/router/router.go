@@ -438,6 +438,7 @@ func (r *Routes) WeatherRoutes() {
 	)
 	usage := weatherRepo.NewUsageRepository(database.GetRedisClient(), weatherConfig.MonthlyLimit)
 	service := weatherSvc.NewWeatherService(dayRepo, itemRepo, memberRepo, provider, usage, effectiveConfig)
+	service.Cache = weatherRepo.NewWeatherCache(database.GetRedisClient())
 	h := weatherHandler.NewWeatherHandler(service)
 	mdw := r.newItineraryAuthMiddleware()
 

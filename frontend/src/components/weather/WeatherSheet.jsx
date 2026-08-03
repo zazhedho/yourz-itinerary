@@ -1,6 +1,8 @@
 import { Wind, X } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 
+import { formatWeatherTime } from '../../utils/formatters'
+
 const WeatherSheet = ({ weather, onClose, returnFocus }) => {
   const dialogRef = useRef(null)
 
@@ -17,6 +19,7 @@ const WeatherSheet = ({ weather, onClose, returnFocus }) => {
   }, [onClose, returnFocus])
 
   if (!weather) return null
+  const isHourly = weather.forecast_type === 'hourly'
   const date = weather.forecast_date
     ? new Date(`${weather.forecast_date}T00:00:00`).toLocaleDateString('id-ID', { dateStyle: 'long' })
     : 'Tanggal tidak tersedia'
@@ -24,6 +27,7 @@ const WeatherSheet = ({ weather, onClose, returnFocus }) => {
     .filter((value) => value != null)
     .map((value) => `${Math.round(value)}°C`)
     .join(' – ')
+  const hourlyFeelsLike = weather.feels_like_c != null ? `${Math.round(weather.feels_like_c)}°C` : ''
 
   return (
     <div className="weather-sheet-backdrop" onClick={onClose} role="presentation">
@@ -40,18 +44,18 @@ const WeatherSheet = ({ weather, onClose, returnFocus }) => {
           <div>
             <p className="eyebrow">Prakiraan cuaca</p>
             <h2 id="weather-sheet-title">{weather.condition_description || weather.condition_code}</h2>
-            <span>{date}</span>
+            <span>{date}{isHourly && ` · pukul ${formatWeatherTime(weather.forecast_time, weather.time_zone)}`}</span>
           </div>
           <button aria-label="Tutup detail cuaca" className="modal-close" onClick={onClose} type="button">
             <X size={18} />
           </button>
         </div>
         <div className="weather-sheet-temperature">
-          <strong>{Math.round(weather.min_temperature_c)}–{Math.round(weather.max_temperature_c)}°C</strong>
+          <strong>{isHourly ? `${Math.round(weather.temperature_c)}°C` : `${Math.round(weather.min_temperature_c)}–${Math.round(weather.max_temperature_c)}°C`}</strong>
           <span>Peluang hujan {weather.precipitation_probability}%</span>
         </div>
         <dl className="weather-detail-grid">
-          {feelsLike && <div><dt>Suhu terasa</dt><dd>{feelsLike}</dd></div>}
+          {(isHourly ? hourlyFeelsLike : feelsLike) && <div><dt>Suhu terasa</dt><dd>{isHourly ? hourlyFeelsLike : feelsLike}</dd></div>}
           <div><dt>Kelembapan udara</dt><dd>{weather.humidity_percent}%</dd></div>
           <div><dt><Wind aria-hidden="true" size={14} /> Kecepatan angin</dt><dd>{weather.wind_speed_kph} km/j</dd></div>
         </dl>

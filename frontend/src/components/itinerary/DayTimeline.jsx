@@ -4,9 +4,9 @@ import { Link } from 'react-router-dom'
 
 import ItemWeather from '../weather/ItemWeather'
 import WeatherSheet from '../weather/WeatherSheet'
-import { formatDate, formatMoney, formatShortDateTime, formatTime } from '../../utils/formatters'
+import { formatDate, formatMoney, formatTime } from '../../utils/formatters'
 
-const DayTimeline = ({ days = [], currency = 'IDR', canEdit = true, memberNameByUserId = {}, onDeleteDay, onDeleteItem, onDayExpanded, onRetryWeather, weatherByDay = {} }) => {
+const DayTimeline = ({ days = [], currency = 'IDR', canEdit = true, onDeleteDay, onDeleteItem, onDayExpanded, onRetryWeather, weatherByDay = {} }) => {
   const [expandedDays, setExpandedDays] = useState({})
   const [expandedActions, setExpandedActions] = useState({})
   const [selectedWeather, setSelectedWeather] = useState(null)
@@ -161,22 +161,6 @@ const DayTimeline = ({ days = [], currency = 'IDR', canEdit = true, memberNameBy
                             {formatMoney(item.cost_estimate, currency)}
                           </span>
                         </div>
-                        {(item.created_at || item.updated_at) && (
-                          <div className="item-audit-container">
-                            {item.created_at && (
-                              <span className="item-audit" title="Dibuat oleh">
-                                <Plus size={11} />
-                                Dibuat {memberNameByUserId[item.created_by] || 'member'} • {formatShortDateTime(item.created_at)}
-                              </span>
-                            )}
-                            {item.updated_at && (
-                              <span className="item-audit" title="Diubah oleh">
-                                <Pencil size={11} />
-                                Diubah {memberNameByUserId[item.updated_by] || 'member'} • {formatShortDateTime(item.updated_at)}
-                              </span>
-                            )}
-                          </div>
-                        )}
                       </div>
                     </article>
                   ))
@@ -187,6 +171,9 @@ const DayTimeline = ({ days = [], currency = 'IDR', canEdit = true, memberNameBy
                   </div>
                 )}
               </div>
+              {expandedDays[day.id] && weatherByDay[day.id]?.data?.items?.some((weather) => weather.status === 'available') && (
+                <p className="weather-inline-attribution" translate="no">Google Maps</p>
+              )}
             </div>
           </div>
         </section>

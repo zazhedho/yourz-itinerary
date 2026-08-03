@@ -1498,18 +1498,18 @@ a.item-location:active {
 
 .item-weather {
   display: grid;
-  min-height: 28px;
-  gap: 3px;
+  gap: 4px;
   max-width: 100%;
-  border: 1px solid #dbeafe;
-  border-radius: 8px;
-  padding: 6px 8px;
-  color: #2563eb;
-  background: #eff6ff;
+  border: 0;
+  border-radius: 4px;
+  padding: 2px 0;
+  color: #475569;
+  background: transparent;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.25;
   text-align: left;
+  transition: color 0.2s ease;
 }
 
 .item-time-column .item-weather {
@@ -1518,10 +1518,16 @@ a.item-location:active {
 }
 
 .item-weather-condition,
-.item-weather small {
+.item-weather-values,
+.item-weather-values small {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+.item-weather:hover,
+.item-weather:focus-visible {
+  color: #1d4ed8;
 }
 
 .item-weather-condition span {
@@ -1533,16 +1539,42 @@ a.item-location:active {
   font-size: 12px;
 }
 
-.item-weather small {
+.item-weather-values {
+  flex-wrap: wrap;
+}
+
+.item-weather-values small {
   color: #64748b;
   font-size: 10px;
   font-weight: 700;
 }
 
+.item-weather-hourly .item-weather-values small {
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 480px) {
   .item-time-column .item-weather {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     width: auto;
-    max-width: 160px;
+    max-width: none;
+    border-left: 1px solid #cbd5e1;
+    border-radius: 0;
+    padding: 0 0 0 8px;
+  }
+
+  .item-weather-condition span {
+    display: none;
+  }
+
+  .item-weather-values {
+    flex-wrap: nowrap;
+  }
+
+  .item-weather-hourly .item-weather-values {
+    flex-wrap: wrap;
   }
 }
 
@@ -1554,6 +1586,16 @@ a.item-location:active {
   background: linear-gradient(90deg, #e2e8f0 25%, #f8fafc 50%, #e2e8f0 75%);
   background-size: 200% 100%;
   animation: skeleton-pulse 1.2s ease-in-out infinite;
+}
+
+.weather-inline-attribution {
+  margin: 2px 16px 8px;
+  color: #94a3b8;
+  font-family: Roboto, Arial, sans-serif;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-align: right;
 }
 
 .weather-day-message {
@@ -1691,24 +1733,6 @@ a.item-location:active {
   .weather-sheet {
     border-radius: 24px;
   }
-}
-
-.item-audit-container {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin-top: 10px;
-  padding-top: 8px;
-  border-top: 1px dashed var(--color-hairline);
-}
-
-.item-audit {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  color: #94a3b8;
-  font-size: 10.5px;
-  font-weight: 500;
 }
 
 .day-empty-state {

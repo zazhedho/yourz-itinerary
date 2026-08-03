@@ -39,10 +39,6 @@ const TripDetail = () => {
   const [coverPhoto, setCoverPhoto] = useState(null)
   const [weatherByDay, setWeatherByDay] = useState({})
   const members = useMemo(() => trip?.members || [], [trip?.members])
-  const memberNameByUserId = useMemo(
-    () => Object.fromEntries(members.map((member) => [member.user_id, memberDisplayName(member)])),
-    [members],
-  )
 
   useEffect(() => {
     if (!trip?.destination) return
@@ -307,7 +303,6 @@ const TripDetail = () => {
           canEdit={canEditTrip}
           currency={trip.currency_code}
           days={days}
-          memberNameByUserId={memberNameByUserId}
           onDeleteDay={handleDeleteDay}
           onDeleteItem={handleDeleteItem}
           onDayExpanded={requestWeather}

@@ -1,6 +1,9 @@
 package domainweather
 
-import "errors"
+import (
+	"errors"
+	"time"
+)
 
 type Status string
 
@@ -13,18 +16,43 @@ const (
 	StatusProviderUnavailable Status = "provider_unavailable"
 )
 
-var ErrOutOfRange = errors.New("weather forecast date is outside provider range")
+const (
+	ForecastTypeDaily  = "daily"
+	ForecastTypeHourly = "hourly"
+)
+
+var (
+	ErrOutOfRange = errors.New("weather forecast date is outside provider range")
+	ErrUsageLimit = errors.New("weather usage limit reached")
+)
 
 type Forecast struct {
+	ForecastType             string
 	ForecastDate             string
+	ForecastTime             *time.Time
 	TimeZone                 string
 	ConditionCode            string
 	ConditionDescription     string
 	IconURI                  string
+	TemperatureC             float64
 	MinTemperatureC          float64
 	MaxTemperatureC          float64
+	FeelsLikeC               *float64
 	FeelsLikeMinC            *float64
 	FeelsLikeMaxC            *float64
+	PrecipitationProbability int
+	HumidityPercent          int
+	WindSpeedKPH             float64
+}
+
+type HourlyForecast struct {
+	ForecastTime             time.Time
+	TimeZone                 string
+	ConditionCode            string
+	ConditionDescription     string
+	IconURI                  string
+	TemperatureC             float64
+	FeelsLikeC               *float64
 	PrecipitationProbability int
 	HumidityPercent          int
 	WindSpeedKPH             float64

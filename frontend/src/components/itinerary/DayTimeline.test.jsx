@@ -72,22 +72,6 @@ describe('DayTimeline', () => {
     expect(screen.getByText('Monas')).toBeInTheDocument()
   })
 
-  it('shows compact item audit metadata with member names', () => {
-    render(
-      <DayTimeline
-        days={days}
-        memberNameByUserId={{
-          'user-1': 'Zaki',
-          'user-2': 'Nadia',
-        }}
-      />,
-      { wrapper: MemoryRouter },
-    )
-
-    expect(screen.getByText(/dibuat zaki/i)).toBeInTheDocument()
-    expect(screen.getByText(/diubah nadia/i)).toBeInTheDocument()
-  })
-
   it('shows item notes in day timeline', () => {
     renderTimeline()
 
@@ -124,6 +108,36 @@ describe('DayTimeline', () => {
     expect(screen.getByRole('button', { name: /lihat detail cuaca/i }).closest('.item-time-column')).toBeInTheDocument()
     expect(screen.getByText('Berawan sebagian')).toBeInTheDocument()
     expect(screen.getByText('24–31°C')).toBeInTheDocument()
-    expect(screen.getByText('Peluang hujan 40%')).toBeInTheDocument()
+    expect(screen.getByText('Hujan 40%')).toBeInTheDocument()
+    expect(screen.getByText('Google Maps')).toBeInTheDocument()
+  })
+
+  it('shows hourly compact weather with local time', async () => {
+    const user = userEvent.setup()
+    render(<DayTimeline days={weatherDays} weatherByDay={{
+      'day-1': {
+        data: {
+          status: 'available',
+          items: [{
+            item_id: 'item-1',
+            status: 'available',
+            forecast_type: 'hourly',
+            forecast_date: '2026-06-26',
+            forecast_time: '2026-06-26T07:00:00Z',
+            time_zone: 'Asia/Jakarta',
+            condition_code: 'RAIN',
+            condition_description: 'Hujan',
+            temperature_c: 30,
+            feels_like_c: 34,
+            precipitation_probability: 60,
+            humidity_percent: 80,
+            wind_speed_kph: 10,
+          }],
+        },
+      },
+    }} />, { wrapper: MemoryRouter })
+    await user.click(screen.getByRole('button', { name: /toggle collapse/i }))
+    expect(screen.getByText('30°C')).toBeInTheDocument()
+    expect(screen.getByText('Hujan 60% pukul 14.00')).toBeInTheDocument()
   })
 })

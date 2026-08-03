@@ -45,4 +45,19 @@ describe('WeatherSheet', () => {
     expect(onClose).toHaveBeenCalledOnce()
     opener.remove()
   })
+
+  it('renders hourly temperature and local scheduled time', () => {
+    render(<WeatherSheet onClose={vi.fn()} weather={{
+      ...weather,
+      forecast_type: 'hourly',
+      forecast_time: '2026-08-08T07:00:00Z',
+      time_zone: 'Asia/Jakarta',
+      temperature_c: 30,
+      feels_like_c: 34,
+    }} />)
+
+    expect(screen.getByText('30°C')).toBeInTheDocument()
+    expect(screen.getByText(/pukul 14\.00/)).toBeInTheDocument()
+    expect(screen.getByText('34°C')).toBeInTheDocument()
+  })
 })

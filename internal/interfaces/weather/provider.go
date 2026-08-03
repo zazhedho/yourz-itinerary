@@ -9,4 +9,5 @@ import (
 
 type Provider interface {
 	GetDailyForecast(context.Context, float64, float64, time.Time) (domainweather.Forecast, error)
+	GetHourlyForecast(context.Context, float64, float64, time.Time) ([]domainweather.HourlyForecast, error)
 }
