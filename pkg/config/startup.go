@@ -9,6 +9,7 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
+	"yourz-itinerary/pkg/configvalue"
 	"yourz-itinerary/utils"
 )
 
@@ -23,11 +24,29 @@ func ValidateStartupConfig(port string) error {
 	problems = append(problems, validateOptionalRedisConfig()...)
 	problems = append(problems, validateOptionalSMTPConfig()...)
 	problems = append(problems, validateOptionalStorageConfig()...)
+	problems = append(problems, validateOptionalWeatherConfig()...)
 
 	if len(problems) > 0 {
 		return errors.New(strings.Join(problems, "; "))
 	}
 	return nil
+}
+
+func validateOptionalWeatherConfig() []string {
+	var problems []string
+	if raw := utils.GetEnv("WEATHER_MONTHLY_LIMIT", ""); raw != "" {
+		limit, err := configvalue.Int(raw, DefaultWeatherMonthlyLimit)
+		if err != nil || limit < 0 {
+			problems = append(problems, "WEATHER_MONTHLY_LIMIT must be a non-negative integer")
+		}
+	}
+	if raw := utils.GetEnv("WEATHER_REQUEST_TIMEOUT", ""); raw != "" {
+		timeout, err := configvalue.Duration(raw, DefaultWeatherRequestTimeout)
+		if err != nil || timeout <= 0 {
+			problems = append(problems, "WEATHER_REQUEST_TIMEOUT must be a positive duration")
+		}
+	}
+	return problems
 }
 
 func validateRequiredPort(port string) []string {

@@ -14,6 +14,7 @@ import itineraryDayService from '../../services/itineraryDayService'
 import itineraryItemService from '../../services/itineraryItemService'
 import tripMemberService from '../../services/tripMemberService'
 import tripService from '../../services/tripService'
+import weatherService from '../../services/weatherService'
 import { getErrorMessage, getResponseData } from '../../services/api'
 import { getDestinationPhoto } from '../../services/unsplashService'
 import { formatDateRange, formatMoney, roleLabel } from '../../utils/formatters'
@@ -36,6 +37,7 @@ const TripDetail = () => {
   const [showMembers, setShowMembers] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [coverPhoto, setCoverPhoto] = useState(null)
+  const [weatherByDay, setWeatherByDay] = useState({})
   const members = useMemo(() => trip?.members || [], [trip?.members])
   const memberNameByUserId = useMemo(
     () => Object.fromEntries(members.map((member) => [member.user_id, memberDisplayName(member)])),
@@ -128,6 +130,17 @@ const TripDetail = () => {
       await itineraryItemService.delete(item.id)
       await loadTrip()
     }, 'Gagal menghapus aktivitas')
+
+  const requestWeather = useCallback((day, retry = false) => {
+    if (!(day.items || []).some((item) => item.latitude != null && item.longitude != null)) return
+    if (!retry && weatherByDay[day.id]) return
+
+    setWeatherByDay((current) => ({ ...current, [day.id]: { loading: true } }))
+    weatherService
+      .getByDay(day.id)
+      .then((response) => setWeatherByDay((current) => ({ ...current, [day.id]: { data: getResponseData(response) } })))
+      .catch((err) => setWeatherByDay((current) => ({ ...current, [day.id]: { error: getErrorMessage(err, 'Gagal memuat cuaca') } })))
+  }, [weatherByDay])
 
   if (loading) return <PageSkeleton label="Memuat detail trip" rows={4} />
   if (!trip) return <RetryState message={error || 'Trip tidak ditemukan'} onRetry={loadTrip} />
@@ -297,6 +310,9 @@ const TripDetail = () => {
           memberNameByUserId={memberNameByUserId}
           onDeleteDay={handleDeleteDay}
           onDeleteItem={handleDeleteItem}
+          onDayExpanded={requestWeather}
+          onRetryWeather={(day) => requestWeather(day, true)}
+          weatherByDay={weatherByDay}
         />
       </section>
 

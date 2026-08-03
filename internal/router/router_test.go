@@ -68,6 +68,7 @@ func TestRouteGroupsRegisterWithDryRunDB(t *testing.T) {
 	routes.TripMemberRoutes()
 	routes.ItineraryDayRoutes()
 	routes.ItineraryItemRoutes()
+	routes.WeatherRoutes()
 
 	registered := map[string]bool{}
 	for _, route := range routes.App.Routes() {
@@ -86,9 +87,17 @@ func TestRouteGroupsRegisterWithDryRunDB(t *testing.T) {
 		"POST /api/location/sync",
 		"DELETE /api/trips/:id/leave",
 		"DELETE /api/trips/:id/members/:member_id",
+		"GET /api/itinerary-days/:id/weather",
 	} {
 		if !registered[want] {
 			t.Fatalf("expected route %s to be registered", want)
 		}
+	}
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/api/itinerary-days/550e8400-e29b-41d4-a716-446655440000/weather", nil)
+	routes.App.ServeHTTP(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("expected weather route to require auth, got %d: %s", rec.Code, rec.Body.String())
 	}
 }

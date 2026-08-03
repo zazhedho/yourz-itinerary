@@ -124,7 +124,7 @@ func (h *HandlerUser) Register(ctx *gin.Context) {
 				Status:       domainaudit.StatusFailed,
 				Message:      "Failed to verify registration OTP",
 				ErrorMessage: err.Error(),
-				AfterData: map[string]interface{}{
+				AfterData: map[string]any{
 					"email": req.Email,
 				},
 			})
@@ -153,7 +153,7 @@ func (h *HandlerUser) Register(ctx *gin.Context) {
 			Status:       domainaudit.StatusFailed,
 			Message:      "Failed to register user",
 			ErrorMessage: err.Error(),
-			AfterData: map[string]interface{}{
+			AfterData: map[string]any{
 				"name":  req.Name,
 				"email": req.Email,
 				"phone": req.Phone,
@@ -172,7 +172,7 @@ func (h *HandlerUser) Register(ctx *gin.Context) {
 		ResourceID:  data.Id,
 		Status:      domainaudit.StatusSuccess,
 		Message:     "Registered user",
-		AfterData: map[string]interface{}{
+		AfterData: map[string]any{
 			"id":    data.Id,
 			"name":  data.Name,
 			"email": data.Email,
@@ -1542,7 +1542,7 @@ func (h *HandlerUser) ResetPassword(ctx *gin.Context) {
 			Resource: "user_password_reset",
 			Status:   domainaudit.StatusSuccess,
 			Message:  "Reset password success",
-			AfterData: map[string]interface{}{
+			AfterData: map[string]any{
 				"email": email,
 			},
 		})
@@ -1593,7 +1593,7 @@ func (h *HandlerUser) ResetPassword(ctx *gin.Context) {
 		Resource: "user_password_reset",
 		Status:   domainaudit.StatusSuccess,
 		Message:  "Reset password success",
-		AfterData: map[string]interface{}{
+		AfterData: map[string]any{
 			"token": req.Token,
 		},
 	})

@@ -103,6 +103,7 @@ func main() {
 	routes.TripMemberRoutes()
 	routes.ItineraryDayRoutes()
 	routes.ItineraryItemRoutes()
+	routes.WeatherRoutes()
 
 	// Register session routes if Redis is available
 	if redisClient != nil {

@@ -21,6 +21,7 @@ import (
 	tripHandler "yourz-itinerary/internal/handlers/http/trip"
 	tripMemberHandler "yourz-itinerary/internal/handlers/http/tripmember"
 	userHandler "yourz-itinerary/internal/handlers/http/user"
+	weatherHandler "yourz-itinerary/internal/handlers/http/weather"
 	interfacesession "yourz-itinerary/internal/interfaces/session"
 	appConfigRepo "yourz-itinerary/internal/repositories/appconfig"
 	auditRepo "yourz-itinerary/internal/repositories/audit"
@@ -37,6 +38,7 @@ import (
 	tripRepo "yourz-itinerary/internal/repositories/trip"
 	tripMemberRepo "yourz-itinerary/internal/repositories/tripmember"
 	userRepo "yourz-itinerary/internal/repositories/user"
+	weatherRepo "yourz-itinerary/internal/repositories/weather"
 	appConfigSvc "yourz-itinerary/internal/services/appconfig"
 	auditSvc "yourz-itinerary/internal/services/audit"
 	itineraryDaySvc "yourz-itinerary/internal/services/itineraryday"
@@ -51,6 +53,7 @@ import (
 	tripSvc "yourz-itinerary/internal/services/trip"
 	tripMemberSvc "yourz-itinerary/internal/services/tripmember"
 	userSvc "yourz-itinerary/internal/services/user"
+	weatherSvc "yourz-itinerary/internal/services/weather"
 	"yourz-itinerary/middlewares"
 	"yourz-itinerary/pkg/config"
 	"yourz-itinerary/pkg/logger"
@@ -416,4 +419,28 @@ func (r *Routes) ItineraryItemRoutes() {
 		itemRoutes.PUT("/:id", h.UpdateItem)
 		itemRoutes.DELETE("/:id", h.DeleteItem)
 	}
+}
+
+func (r *Routes) WeatherRoutes() {
+	weatherConfig := config.LoadWeatherConfig()
+	effectiveConfig := weatherConfig
+	if weatherConfig.APIKey == "" {
+		effectiveConfig.Enabled = false
+	}
+
+	dayRepo := itineraryDayRepo.NewItineraryDayRepo(r.DB)
+	itemRepo := itineraryItemRepo.NewItineraryItemRepo(r.DB)
+	memberRepo := tripMemberRepo.NewTripMemberRepo(r.DB)
+	provider := weatherRepo.NewGoogleWeatherProvider(
+		weatherConfig.APIKey,
+		weatherConfig.BaseURL,
+		&http.Client{Timeout: weatherConfig.RequestTimeout},
+	)
+	usage := weatherRepo.NewUsageRepository(database.GetRedisClient(), weatherConfig.MonthlyLimit)
+	service := weatherSvc.NewWeatherService(dayRepo, itemRepo, memberRepo, provider, usage, effectiveConfig)
+	h := weatherHandler.NewWeatherHandler(service)
+	mdw := r.newItineraryAuthMiddleware()
+
+	dayRoutes := r.App.Group("/api/itinerary-days").Use(mdw.AuthMiddleware())
+	dayRoutes.GET("/:id/weather", h.GetByDay)
 }

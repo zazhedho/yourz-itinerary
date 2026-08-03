@@ -97,3 +97,36 @@ func TestLoadPasswordResetConfigUsesFallbackURL(t *testing.T) {
 		t.Fatalf("unexpected reset config: %+v", got)
 	}
 }
+
+func TestLoadWeatherConfigDefaults(t *testing.T) {
+	for _, key := range []string{"WEATHER_ENABLED", "GOOGLE_WEATHER_API_KEY", "GOOGLE_WEATHER_BASE_URL", "WEATHER_MONTHLY_LIMIT", "WEATHER_REQUEST_TIMEOUT"} {
+		t.Setenv(key, "")
+	}
+
+	got := LoadWeatherConfig()
+	if got.Enabled || got.APIKey != "" || got.BaseURL != DefaultWeatherBaseURL || got.MonthlyLimit != 9000 || got.RequestTimeout != 5*time.Second {
+		t.Fatalf("unexpected weather defaults: %+v", got)
+	}
+}
+
+func TestLoadWeatherConfigOverrides(t *testing.T) {
+	t.Setenv("WEATHER_ENABLED", "true")
+	t.Setenv("GOOGLE_WEATHER_API_KEY", "server-key")
+	t.Setenv("GOOGLE_WEATHER_BASE_URL", " http://weather.test/ ")
+	t.Setenv("WEATHER_MONTHLY_LIMIT", "12")
+	t.Setenv("WEATHER_REQUEST_TIMEOUT", "2s")
+
+	got := LoadWeatherConfig()
+	if !got.Enabled || got.APIKey != "server-key" || got.BaseURL != "http://weather.test" || got.MonthlyLimit != 12 || got.RequestTimeout != 2*time.Second {
+		t.Fatalf("unexpected weather overrides: %+v", got)
+	}
+}
+
+func TestValidateWeatherConfig(t *testing.T) {
+	if err := ValidateWeatherConfig(WeatherConfig{MonthlyLimit: -1, RequestTimeout: time.Second}); err == nil {
+		t.Fatal("expected negative limit error")
+	}
+	if err := ValidateWeatherConfig(WeatherConfig{MonthlyLimit: 1}); err == nil {
+		t.Fatal("expected non-positive timeout error")
+	}
+}

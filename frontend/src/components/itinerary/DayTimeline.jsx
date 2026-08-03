@@ -1,18 +1,30 @@
 import { GripVertical, MapPin, Pencil, Plus, Trash2, ChevronDown, MoreHorizontal } from 'lucide-react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 
+import ItemWeather from '../weather/ItemWeather'
+import WeatherSheet from '../weather/WeatherSheet'
 import { formatDate, formatMoney, formatShortDateTime, formatTime } from '../../utils/formatters'
 
-const DayTimeline = ({ days = [], currency = 'IDR', canEdit = true, memberNameByUserId = {}, onDeleteDay, onDeleteItem }) => {
+const DayTimeline = ({ days = [], currency = 'IDR', canEdit = true, memberNameByUserId = {}, onDeleteDay, onDeleteItem, onDayExpanded, onRetryWeather, weatherByDay = {} }) => {
   const [expandedDays, setExpandedDays] = useState({})
   const [expandedActions, setExpandedActions] = useState({})
+  const [selectedWeather, setSelectedWeather] = useState(null)
+  const [weatherTrigger, setWeatherTrigger] = useState(null)
+  const weatherRequested = useRef({})
 
   const toggleDay = (dayId) => {
+    const day = days.find((item) => item.id === dayId)
+    const willExpand = !expandedDays[dayId]
+    const hasCoordinates = (day?.items || []).some((item) => item.latitude != null && item.longitude != null)
     setExpandedDays(prev => ({
       ...prev,
       [dayId]: !prev[dayId]
     }))
+    if (willExpand && day && hasCoordinates && !weatherRequested.current[day.id]) {
+      weatherRequested.current[day.id] = true
+      onDayExpanded?.(day)
+    }
   }
 
   const toggleActions = (e, dayId) => {
@@ -38,6 +50,7 @@ const DayTimeline = ({ days = [], currency = 'IDR', canEdit = true, memberNameBy
                 type="button" 
                 className={`collapse-toggle ${!expandedDays[day.id] ? 'collapsed' : ''}`}
                 aria-label="Toggle collapse"
+                onClick={(event) => { event.stopPropagation(); toggleDay(day.id) }}
               >
                 <ChevronDown size={20} />
               </button>
@@ -79,13 +92,38 @@ const DayTimeline = ({ days = [], currency = 'IDR', canEdit = true, memberNameBy
 
           <div className={`item-list-wrapper ${!expandedDays[day.id] ? 'collapsed' : ''}`}>
             <div className="item-list-inner">
+              {expandedDays[day.id] && weatherByDay[day.id]?.loading && <div aria-label="Memuat cuaca" className="weather-loading" role="status" />}
+              {expandedDays[day.id] && weatherByDay[day.id]?.error && (
+                <div className="weather-day-message" role="alert">
+                  <span>{weatherByDay[day.id].error}</span>
+                  <button onClick={() => onRetryWeather?.(day)} type="button">Coba lagi</button>
+                </div>
+              )}
+              {expandedDays[day.id] && weatherByDay[day.id]?.data?.status === 'out_of_range' && <p className="weather-day-message">Prakiraan cuaca hanya tersedia untuk 10 hari ke depan.</p>}
+              {expandedDays[day.id] && weatherByDay[day.id]?.data?.status === 'past_date' && <p className="weather-day-message">Prakiraan cuaca untuk tanggal ini sudah tidak tersedia.</p>}
+              {expandedDays[day.id] && weatherByDay[day.id]?.data?.status === 'limit_reached' && <p className="weather-day-message">Prakiraan cuaca sedang tidak tersedia</p>}
+              {expandedDays[day.id] && weatherByDay[day.id]?.data?.status === 'provider_unavailable' && (
+                <div className="weather-day-message" role="alert">
+                  <span>Prakiraan cuaca sedang tidak tersedia.</span>
+                  <button onClick={() => onRetryWeather?.(day)} type="button">Coba lagi</button>
+                </div>
+              )}
               <div className="item-list">
                 {(day.items || []).length ? (
                   (day.items || []).map((item) => (
                     <article className="item-row" key={item.id}>
-                      <div className="item-time">
-                        {formatTime(item.start_time) || '--:--'}
-                        {item.end_time && <span className="time-separator"> - {formatTime(item.end_time)}</span>}
+                      <div className="item-time-column">
+                        <div className="item-time">
+                          {formatTime(item.start_time) || '--:--'}
+                          {item.end_time && <span className="time-separator"> - {formatTime(item.end_time)}</span>}
+                        </div>
+                        <ItemWeather
+                          onOpen={(event) => {
+                            setSelectedWeather(weatherByDay[day.id]?.data?.items?.find((weather) => weather.item_id === item.id))
+                            setWeatherTrigger(event.currentTarget)
+                          }}
+                          weather={weatherByDay[day.id]?.data?.items?.find((weather) => weather.item_id === item.id)}
+                        />
                       </div>
                       <div className="item-content">
                         <div className="item-title-row">
@@ -102,7 +140,7 @@ const DayTimeline = ({ days = [], currency = 'IDR', canEdit = true, memberNameBy
                           )}
                         </div>
                         {item.description && <p className="item-note">{item.description}</p>}
-                        <div className="item-meta">
+                          <div className="item-meta">
                           {item.location_name && (
                             <a
                               href={`https://www.google.com/maps/search/?api=1&query=${
@@ -153,6 +191,7 @@ const DayTimeline = ({ days = [], currency = 'IDR', canEdit = true, memberNameBy
           </div>
         </section>
       ))}
+      <WeatherSheet onClose={() => setSelectedWeather(null)} returnFocus={weatherTrigger} weather={selectedWeather} />
     </div>
   )
 }

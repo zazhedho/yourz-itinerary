@@ -1380,6 +1380,7 @@ textarea:disabled {
     gap: 10px;
     padding: 16px 12px;
   }
+
 }
 
 .item-row:hover {
@@ -1406,6 +1407,22 @@ textarea:disabled {
   letter-spacing: 0.3px;
   white-space: nowrap;
   justify-self: start;
+}
+
+.item-time-column {
+  display: grid;
+  min-width: 0;
+  justify-items: start;
+  gap: 6px;
+}
+
+@media (max-width: 480px) {
+  .item-time-column {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
 }
 
 .time-separator {
@@ -1477,6 +1494,203 @@ a.item-location:active {
   font-weight: 700;
   border-radius: 4px;
   letter-spacing: 0.2px;
+}
+
+.item-weather {
+  display: grid;
+  min-height: 28px;
+  gap: 3px;
+  max-width: 100%;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  padding: 6px 8px;
+  color: #2563eb;
+  background: #eff6ff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.25;
+  text-align: left;
+}
+
+.item-time-column .item-weather {
+  width: 100%;
+  max-width: 110px;
+}
+
+.item-weather-condition,
+.item-weather small {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.item-weather-condition span {
+  overflow-wrap: anywhere;
+}
+
+.item-weather strong {
+  color: #1d4ed8;
+  font-size: 12px;
+}
+
+.item-weather small {
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+@media (max-width: 480px) {
+  .item-time-column .item-weather {
+    width: auto;
+    max-width: 160px;
+  }
+}
+
+.weather-loading {
+  width: min(100%, 240px);
+  height: 32px;
+  margin: 8px 16px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #e2e8f0 25%, #f8fafc 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-pulse 1.2s ease-in-out infinite;
+}
+
+.weather-day-message {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 16px 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.weather-day-message button {
+  border: 0;
+  padding: 0;
+  color: var(--color-primary);
+  background: transparent;
+  font: inherit;
+  font-weight: 800;
+  text-decoration: underline;
+}
+
+.weather-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.46);
+  backdrop-filter: blur(6px);
+}
+
+.weather-sheet {
+  width: min(100%, 480px);
+  max-height: min(80vh, 560px);
+  overflow: auto;
+  border-radius: 24px 24px 16px 16px;
+  padding: 20px;
+  outline: none;
+  background: #ffffff;
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.24);
+}
+
+.weather-sheet-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.weather-sheet-heading h2 {
+  margin: 0 0 4px;
+  font-size: 20px;
+  overflow-wrap: anywhere;
+}
+
+.weather-sheet-heading span {
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.weather-sheet-temperature {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.weather-sheet-temperature strong {
+  color: var(--color-ink);
+  font-size: 28px;
+}
+
+.weather-sheet-temperature span {
+  color: var(--color-muted);
+  font-size: 13px;
+}
+
+.weather-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 20px 0 0;
+}
+
+.weather-detail-grid div {
+  min-width: 0;
+  border-radius: 14px;
+  padding: 10px;
+  background: #f8fafc;
+}
+
+.weather-detail-grid dt {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-muted);
+  font-size: 11px;
+}
+
+.weather-detail-grid dd {
+  margin: 4px 0 0;
+  color: var(--color-ink);
+  font-size: 14px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.weather-sheet-attribution {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px 12px;
+  margin: 16px 0 0;
+  color: #5e5e5e;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.google-maps-attribution {
+  white-space: nowrap;
+}
+
+@media (min-width: 600px) {
+  .weather-sheet-backdrop {
+    align-items: center;
+  }
+
+  .weather-sheet {
+    border-radius: 24px;
+  }
 }
 
 .item-audit-container {
