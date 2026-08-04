@@ -9,6 +9,12 @@ import (
 	redismock "github.com/go-redis/redismock/v9"
 )
 
+func TestNewUsageRepository(t *testing.T) {
+	if NewUsageRepository(nil, 10) == nil {
+		t.Fatal("NewUsageRepository returned nil")
+	}
+}
+
 func TestUsageRepositoryReservesThroughLimit(t *testing.T) {
 	client, mock := redismock.NewClientMock()
 	now := time.Date(2026, time.August, 3, 12, 0, 0, 0, time.UTC)

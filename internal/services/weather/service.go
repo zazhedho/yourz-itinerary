@@ -333,7 +333,7 @@ func mapWeatherItem(item domainitineraryitem.ItineraryItem, forecast domainweath
 	return dto.WeatherItemResponse{
 		ItemID: item.Id, Status: string(domainweather.StatusAvailable), ForecastType: domainweather.ForecastTypeDaily, ForecastDate: forecast.ForecastDate,
 		TimeZone: forecast.TimeZone, ConditionCode: forecast.ConditionCode, ConditionDescription: forecast.ConditionDescription,
-		IconURI: forecast.IconURI, MinTemperatureC: float64Ptr(forecast.MinTemperatureC), MaxTemperatureC: float64Ptr(forecast.MaxTemperatureC),
+		IconURI: forecast.IconURI, MinTemperatureC: new(forecast.MinTemperatureC), MaxTemperatureC: new(forecast.MaxTemperatureC),
 		FeelsLikeMinC: forecast.FeelsLikeMinC, FeelsLikeMaxC: forecast.FeelsLikeMaxC,
 		PrecipitationProbability: forecast.PrecipitationProbability, HumidityPercent: forecast.HumidityPercent, WindSpeedKPH: forecast.WindSpeedKPH,
 	}
@@ -345,13 +345,9 @@ func mapHourlyItem(item domainitineraryitem.ItineraryItem, daily domainweather.F
 		ItemID: item.Id, Status: string(domainweather.StatusAvailable), ForecastType: domainweather.ForecastTypeHourly,
 		ForecastDate: daily.ForecastDate, ForecastTime: &forecastTime, TimeZone: forecast.TimeZone,
 		ConditionCode: forecast.ConditionCode, ConditionDescription: forecast.ConditionDescription, IconURI: forecast.IconURI,
-		TemperatureC: float64Ptr(forecast.TemperatureC), FeelsLikeC: forecast.FeelsLikeC,
+		TemperatureC: new(forecast.TemperatureC), FeelsLikeC: forecast.FeelsLikeC,
 		PrecipitationProbability: forecast.PrecipitationProbability, HumidityPercent: forecast.HumidityPercent, WindSpeedKPH: forecast.WindSpeedKPH,
 	}
-}
-
-func float64Ptr(value float64) *float64 {
-	return &value
 }
 
 func coordinateKey(latitude, longitude float64) string {

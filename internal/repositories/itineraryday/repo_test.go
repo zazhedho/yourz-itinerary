@@ -2,11 +2,13 @@ package repositoryitineraryday
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
 	domainitineraryday "yourz-itinerary/internal/domain/itineraryday"
 	repositorygeneric "yourz-itinerary/internal/repositories/generic"
+	"yourz-itinerary/pkg/filter"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"gorm.io/driver/postgres"
@@ -60,5 +62,46 @@ func TestItineraryDaySoftDeletePersistsAuditFields(t *testing.T) {
 
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Fatalf("unmet sql expectations: %v", err)
+	}
+}
+
+func TestItineraryDayQueries(t *testing.T) {
+	t.Run("list by trip", func(t *testing.T) {
+		db, mock := newItineraryDayMockDB(t)
+		repo := &repo{GenericRepository: repositorygeneric.New[domainitineraryday.ItineraryDay](db)}
+		mock.ExpectQuery(`SELECT .* FROM "itinerary_days".*trip_id =`).
+			WithArgs("trip-1").
+			WillReturnRows(sqlmock.NewRows([]string{"id", "trip_id", "day_number"}).AddRow("day-1", "trip-1", 1))
+
+		days, err := repo.ListByTrip(context.Background(), "trip-1")
+		if err != nil || len(days) != 1 || days[0].Id != "day-1" {
+			t.Fatalf("ListByTrip() = %#v, %v", days, err)
+		}
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Fatalf("unmet sql expectations: %v", err)
+		}
+	})
+
+	t.Run("returns query error", func(t *testing.T) {
+		db, mock := newItineraryDayMockDB(t)
+		repo := &repo{GenericRepository: repositorygeneric.New[domainitineraryday.ItineraryDay](db)}
+		queryErr := errors.New("query failed")
+		mock.ExpectQuery(`SELECT .* FROM "itinerary_days".*trip_id =`).
+			WithArgs("trip-1").
+			WillReturnError(queryErr)
+
+		_, err := repo.ListByTrip(context.Background(), "trip-1")
+		if !errors.Is(err, queryErr) {
+			t.Fatalf("error = %v, want %v", err, queryErr)
+		}
+	})
+}
+
+func TestItineraryDayGetAllDelegates(t *testing.T) {
+	db, _ := newItineraryDayMockDB(t)
+	repo := &repo{GenericRepository: repositorygeneric.New[domainitineraryday.ItineraryDay](db)}
+	repo.DB = repo.DB.Session(&gorm.Session{DryRun: true})
+	if _, _, err := repo.GetAll(context.Background(), filter.BaseParams{Limit: 10}); err != nil {
+		t.Fatalf("GetAll: %v", err)
 	}
 }

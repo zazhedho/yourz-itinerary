@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -103,5 +104,45 @@ func TestItineraryDayForbidden(t *testing.T) {
 	)
 	if rec.Code != http.StatusForbidden {
 		t.Fatalf("expected 403, got %d: %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestItineraryDayHandlerErrorsAndMutations(t *testing.T) {
+	dayID := "/api/days/550e8400-e29b-41d4-a716-446655440000"
+	tripID := "/api/trips/550e8400-e29b-41d4-a716-446655440000/days"
+	for _, tt := range []struct {
+		name   string
+		err    error
+		status int
+	}{
+		{name: "trip not found", err: serviceshared.ErrTripNotFound, status: http.StatusNotFound},
+		{name: "invalid date", err: serviceshared.ErrInvalidDate, status: http.StatusBadRequest},
+		{name: "not member", err: serviceshared.ErrNotMember, status: http.StatusForbidden},
+		{name: "internal error", err: errors.New("unexpected"), status: http.StatusInternalServerError},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			handler := NewItineraryDayHandler(&itineraryDayServiceMock{err: tt.err})
+			rec := performItineraryDayRequest(http.MethodPost, "/api/trips/:id/days", tripID,
+				dto.CreateItineraryDayRequest{DayNumber: 1}, handler.CreateDay,
+				authClaims("u-1", "alice", "member"))
+			if rec.Code != tt.status {
+				t.Fatalf("status = %d, want %d: %s", rec.Code, tt.status, rec.Body.String())
+			}
+		})
+	}
+
+	handler := NewItineraryDayHandler(&itineraryDayServiceMock{day: dto.ItineraryDayResponse{Id: "day-1"}})
+	if rec := performItineraryDayRequest(http.MethodPut, "/api/days/:id", dayID,
+		dto.UpdateItineraryDayRequest{DayNumber: 2}, handler.UpdateDay,
+		authClaims("u-1", "alice", "member")); rec.Code != http.StatusOK {
+		t.Fatalf("UpdateDay status = %d, want 200", rec.Code)
+	}
+	if rec := performItineraryDayRequest(http.MethodDelete, "/api/days/:id", dayID, nil, handler.DeleteDay,
+		authClaims("u-1", "alice", "member")); rec.Code != http.StatusOK {
+		t.Fatalf("DeleteDay status = %d, want 200", rec.Code)
+	}
+	if rec := performItineraryDayRequest(http.MethodPut, "/api/days/:id", dayID, "invalid", handler.UpdateDay,
+		authClaims("u-1", "alice", "member")); rec.Code != http.StatusBadRequest {
+		t.Fatalf("invalid JSON status = %d, want 400", rec.Code)
 	}
 }

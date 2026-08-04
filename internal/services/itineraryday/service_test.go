@@ -2,6 +2,8 @@ package serviceitineraryday
 
 import (
 	"context"
+	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -92,6 +94,149 @@ func TestDeleteDayShrinksTripDateRange(t *testing.T) {
 	}
 }
 
+func TestItineraryDayServiceCreateValidationAndRepositoryErrors(t *testing.T) {
+	ctx := context.Background()
+	member := domaintripmember.TripMember{Id: "member-1", TripId: "trip-1", UserId: "user-1", Role: serviceshared.TripRoleEditor}
+	date := mustParseDate(t, "2026-06-26")
+	storeErr := errors.New("store failed")
+	listErr := errors.New("list failed")
+	updateErr := errors.New("trip update failed")
+
+	tests := []struct {
+		name      string
+		member    domaintripmember.TripMember
+		memberErr error
+		day       stubItineraryDayRepo
+		trip      *stubTripRepo
+		req       dto.CreateItineraryDayRequest
+		wantErr   error
+	}{
+		{name: "not member", wantErr: serviceshared.ErrNotMember},
+		{name: "member lookup error", memberErr: errors.New("member lookup failed"), wantErr: serviceshared.ErrNotMember},
+		{name: "access denied", member: domaintripmember.TripMember{Id: "member-1", Role: serviceshared.TripRoleViewer}, wantErr: serviceshared.ErrAccessDenied},
+		{name: "invalid date", member: member, req: dto.CreateItineraryDayRequest{DayNumber: 1, Date: "bad"}, wantErr: serviceshared.ErrInvalidDate},
+		{name: "store error", member: member, day: stubItineraryDayRepo{storeErr: storeErr}, req: dto.CreateItineraryDayRequest{DayNumber: 1, Title: "  Beach  "}, wantErr: storeErr},
+		{name: "trip lookup error", member: member, day: stubItineraryDayRepo{days: []domainitineraryday.ItineraryDay{{Date: &date}}}, trip: &stubTripRepo{getErr: errors.New("trip missing")}, req: dto.CreateItineraryDayRequest{DayNumber: 1, Date: "2026-06-26"}, wantErr: serviceshared.ErrTripNotFound},
+		{name: "day list error", member: member, day: stubItineraryDayRepo{listErr: listErr}, trip: &stubTripRepo{trip: domaintrip.Trip{Id: "trip-1"}}, req: dto.CreateItineraryDayRequest{DayNumber: 1, Date: "2026-06-26"}, wantErr: listErr},
+		{name: "trip update error", member: member, day: stubItineraryDayRepo{days: []domainitineraryday.ItineraryDay{{Date: &date}}}, trip: &stubTripRepo{trip: domaintrip.Trip{Id: "trip-1"}, updateErr: updateErr}, req: dto.CreateItineraryDayRequest{DayNumber: 1, Date: "2026-06-26"}, wantErr: updateErr},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			memberRepo := &stubTripMemberRepo{member: tt.member, activeErr: tt.memberErr}
+			tripRepo := tt.trip
+			if tripRepo == nil {
+				tripRepo = &stubTripRepo{}
+			}
+			_, err := NewItineraryDayService(memberRepo, &tt.day, tripRepo).CreateDay(ctx, "user-1", "trip-1", tt.req)
+			if !errors.Is(err, tt.wantErr) {
+				t.Fatalf("error = %v, want %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestItineraryDayServiceUpdateAndDeleteErrors(t *testing.T) {
+	ctx := context.Background()
+	member := domaintripmember.TripMember{Id: "member-1", TripId: "trip-1", Role: serviceshared.TripRoleEditor}
+	day := domainitineraryday.ItineraryDay{Id: "day-1", TripId: "trip-1"}
+	updateErr := errors.New("day update failed")
+	deleteErr := errors.New("day delete failed")
+	listErr := errors.New("list failed")
+
+	tests := []struct {
+		name      string
+		member    domaintripmember.TripMember
+		memberErr error
+		dayRepo   stubItineraryDayRepo
+		tripRepo  *stubTripRepo
+		wantErr   error
+	}{
+		{name: "update day not found", dayRepo: stubItineraryDayRepo{getErr: errors.New("missing")}, wantErr: serviceshared.ErrDayNotFound},
+		{name: "update not member", dayRepo: stubItineraryDayRepo{day: day}, wantErr: serviceshared.ErrNotMember},
+		{name: "update member lookup error", memberErr: errors.New("member lookup failed"), dayRepo: stubItineraryDayRepo{day: day}, wantErr: serviceshared.ErrNotMember},
+		{name: "update access denied", member: domaintripmember.TripMember{Id: "member-1", Role: serviceshared.TripRoleViewer}, dayRepo: stubItineraryDayRepo{day: day}, wantErr: serviceshared.ErrAccessDenied},
+		{name: "update invalid date", member: member, dayRepo: stubItineraryDayRepo{day: day}, wantErr: serviceshared.ErrInvalidDate},
+		{name: "update repository error", member: member, dayRepo: stubItineraryDayRepo{day: day, updateErr: updateErr}, wantErr: updateErr},
+		{name: "update sync trip error", member: member, dayRepo: stubItineraryDayRepo{day: day}, tripRepo: &stubTripRepo{getErr: errors.New("missing trip")}, wantErr: serviceshared.ErrTripNotFound},
+		{name: "update sync list error", member: member, dayRepo: stubItineraryDayRepo{day: day, listErr: listErr}, tripRepo: &stubTripRepo{trip: domaintrip.Trip{Id: "trip-1"}}, wantErr: listErr},
+		{name: "delete day not found", dayRepo: stubItineraryDayRepo{getErr: errors.New("missing")}, wantErr: serviceshared.ErrDayNotFound},
+		{name: "delete not member", dayRepo: stubItineraryDayRepo{day: day}, wantErr: serviceshared.ErrNotMember},
+		{name: "delete access denied", member: domaintripmember.TripMember{Id: "member-1", Role: serviceshared.TripRoleViewer}, dayRepo: stubItineraryDayRepo{day: day}, wantErr: serviceshared.ErrAccessDenied},
+		{name: "delete repository error", member: member, dayRepo: stubItineraryDayRepo{day: day, softDeleteErr: deleteErr}, wantErr: deleteErr},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			memberRepo := &stubTripMemberRepo{member: tt.member, activeErr: tt.memberErr}
+			tripRepo := tt.tripRepo
+			if tripRepo == nil {
+				tripRepo = &stubTripRepo{trip: domaintrip.Trip{Id: "trip-1"}}
+			}
+			svc := NewItineraryDayService(memberRepo, &tt.dayRepo, tripRepo)
+			var err error
+			if strings.HasPrefix(tt.name, "update") {
+				req := dto.UpdateItineraryDayRequest{}
+				if tt.name == "update invalid date" {
+					req.Date = "bad"
+				}
+				_, err = svc.UpdateDay(ctx, "user-1", "day-1", req)
+			} else {
+				err = svc.DeleteDay(ctx, "user-1", "day-1")
+			}
+			if !errors.Is(err, tt.wantErr) {
+				t.Fatalf("error = %v, want %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestItineraryDayServiceNoTripRepositoryAndSameDate(t *testing.T) {
+	ctx := context.Background()
+	date := mustParseDate(t, "2026-06-26")
+	memberRepo := &stubTripMemberRepo{member: domaintripmember.TripMember{Id: "member-1", Role: serviceshared.TripRoleEditor}}
+	dayRepo := &stubItineraryDayRepo{}
+	if _, err := NewItineraryDayService(memberRepo, dayRepo, nil).CreateDay(ctx, "user-1", "trip-1", dto.CreateItineraryDayRequest{DayNumber: 1, Title: "  Beach  "}); err != nil {
+		t.Fatalf("CreateDay without trip repo: %v", err)
+	}
+	if dayRepo.day.Title == nil || *dayRepo.day.Title != "Beach" {
+		t.Fatalf("trimmed title = %v", dayRepo.day.Title)
+	}
+
+	dayRepo = &stubItineraryDayRepo{days: []domainitineraryday.ItineraryDay{{Date: &date}}}
+	tripRepo := &stubTripRepo{trip: domaintrip.Trip{Id: "trip-1", StartDate: &date, EndDate: &date}}
+	if _, err := NewItineraryDayService(memberRepo, dayRepo, tripRepo).CreateDay(ctx, "user-1", "trip-1", dto.CreateItineraryDayRequest{DayNumber: 1, Date: "2026-06-26"}); err != nil {
+		t.Fatalf("CreateDay with unchanged range: %v", err)
+	}
+	if tripRepo.updated.Id != "" {
+		t.Fatal("trip should not be updated when dates are unchanged")
+	}
+}
+
+func TestSameDate(t *testing.T) {
+	date := mustParseDate(t, "2026-06-26")
+	different := mustParseDate(t, "2026-06-27")
+	for _, tt := range []struct {
+		name        string
+		left, right *time.Time
+		want        bool
+	}{
+		{name: "both nil", want: true},
+		{name: "left nil", right: &date, want: false},
+		{name: "right nil", left: &date, want: false},
+		{name: "same day different time", left: timePtr(date.Add(8 * time.Hour)), right: &date, want: true},
+		{name: "different day", left: &date, right: &different, want: false},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := sameDate(tt.left, tt.right); got != tt.want {
+				t.Fatalf("sameDate() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func timePtr(value time.Time) *time.Time { return &value }
+
 func mustParseDate(t *testing.T, value string) time.Time {
 	t.Helper()
 	parsed, err := serviceshared.ParseDate(value)
@@ -106,17 +251,28 @@ func formatDate(value time.Time) string {
 }
 
 type stubItineraryDayRepo struct {
-	day  domainitineraryday.ItineraryDay
-	days []domainitineraryday.ItineraryDay
+	day           domainitineraryday.ItineraryDay
+	days          []domainitineraryday.ItineraryDay
+	getErr        error
+	storeErr      error
+	updateErr     error
+	softDeleteErr error
+	listErr       error
 }
 
 func (r *stubItineraryDayRepo) Store(_ context.Context, day domainitineraryday.ItineraryDay) error {
+	if r.storeErr != nil {
+		return r.storeErr
+	}
 	r.day = day
 	r.days = append(r.days, day)
 	return nil
 }
 
 func (r *stubItineraryDayRepo) GetByID(_ context.Context, _ string) (domainitineraryday.ItineraryDay, error) {
+	if r.getErr != nil {
+		return domainitineraryday.ItineraryDay{}, r.getErr
+	}
 	return r.day, nil
 }
 
@@ -125,21 +281,31 @@ func (r *stubItineraryDayRepo) GetAll(_ context.Context, _ filter.BaseParams) ([
 }
 
 func (r *stubItineraryDayRepo) Update(_ context.Context, day domainitineraryday.ItineraryDay) error {
+	if r.updateErr != nil {
+		return r.updateErr
+	}
 	r.day = day
 	return nil
 }
 
 func (r *stubItineraryDayRepo) Delete(_ context.Context, _ string) error { return nil }
 
-func (r *stubItineraryDayRepo) SoftDelete(_ context.Context, _ string, _ string) error { return nil }
+func (r *stubItineraryDayRepo) SoftDelete(_ context.Context, _ string, _ string) error {
+	return r.softDeleteErr
+}
 
 func (r *stubItineraryDayRepo) ListByTrip(_ context.Context, _ string) ([]domainitineraryday.ItineraryDay, error) {
+	if r.listErr != nil {
+		return nil, r.listErr
+	}
 	return r.days, nil
 }
 
 type stubTripRepo struct {
-	trip    domaintrip.Trip
-	updated domaintrip.Trip
+	trip      domaintrip.Trip
+	updated   domaintrip.Trip
+	getErr    error
+	updateErr error
 }
 
 func (r *stubTripRepo) Store(_ context.Context, trip domaintrip.Trip) error {
@@ -148,6 +314,9 @@ func (r *stubTripRepo) Store(_ context.Context, trip domaintrip.Trip) error {
 }
 
 func (r *stubTripRepo) GetByID(_ context.Context, _ string) (domaintrip.Trip, error) {
+	if r.getErr != nil {
+		return domaintrip.Trip{}, r.getErr
+	}
 	return r.trip, nil
 }
 
@@ -156,6 +325,9 @@ func (r *stubTripRepo) GetAll(_ context.Context, _ filter.BaseParams) ([]domaint
 }
 
 func (r *stubTripRepo) Update(_ context.Context, trip domaintrip.Trip) error {
+	if r.updateErr != nil {
+		return r.updateErr
+	}
 	r.updated = trip
 	r.trip = trip
 	return nil
@@ -174,7 +346,8 @@ func (r *stubTripRepo) ListByMember(_ context.Context, _ string) ([]domaintrip.T
 }
 
 type stubTripMemberRepo struct {
-	member domaintripmember.TripMember
+	member    domaintripmember.TripMember
+	activeErr error
 }
 
 func (r *stubTripMemberRepo) Store(_ context.Context, member domaintripmember.TripMember) error {
@@ -204,6 +377,9 @@ func (r *stubTripMemberRepo) GetByTripAndUser(_ context.Context, _ string, _ str
 }
 
 func (r *stubTripMemberRepo) GetActiveByTripAndUser(_ context.Context, _ string, _ string) (domaintripmember.TripMember, error) {
+	if r.activeErr != nil {
+		return domaintripmember.TripMember{}, r.activeErr
+	}
 	return r.member, nil
 }
 

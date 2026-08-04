@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -11,6 +12,7 @@ import (
 	"yourz-itinerary/internal/authscope"
 	"yourz-itinerary/internal/dto"
 	serviceshared "yourz-itinerary/internal/services/shared"
+	servicetrip "yourz-itinerary/internal/services/trip"
 	"yourz-itinerary/utils"
 
 	"github.com/gin-gonic/gin"
@@ -120,5 +122,44 @@ func TestTripHandlerInvalidUUID(t *testing.T) {
 	)
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("expected 400, got %d", rec.Code)
+	}
+}
+
+func TestTripHandlerMutationAndErrorMappings(t *testing.T) {
+	validPath := "/api/trips/550e8400-e29b-41d4-a716-446655440000"
+	for _, tc := range []struct {
+		name string
+		err  error
+		want int
+	}{
+		{"not member", serviceshared.ErrNotMember, http.StatusForbidden},
+		{"not found", serviceshared.ErrTripNotFound, http.StatusNotFound},
+		{"timezone", servicetrip.ErrInvalidTimezone, http.StatusBadRequest},
+		{"currency", servicetrip.ErrInvalidCurrency, http.StatusBadRequest},
+		{"date", serviceshared.ErrInvalidDate, http.StatusBadRequest},
+		{"range", servicetrip.ErrInvalidDateRange, http.StatusBadRequest},
+		{"internal", errors.New("failed"), http.StatusInternalServerError},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			handler := NewTripHandler(&tripServiceMock{err: tc.err})
+			rec := performTripRequest(http.MethodPut, "/api/trips/:id", validPath, dto.UpdateTripRequest{Title: "Trip"}, handler.UpdateTrip, authClaims("u-1", "alice", "member"))
+			if rec.Code != tc.want {
+				t.Fatalf("got %d want %d: %s", rec.Code, tc.want, rec.Body.String())
+			}
+		})
+	}
+
+	handler := NewTripHandler(&tripServiceMock{trip: dto.TripDetailResponse{Id: "trip-1"}})
+	if rec := performTripRequest(http.MethodPut, "/api/trips/:id", validPath, dto.UpdateTripRequest{Title: "Trip"}, handler.UpdateTrip, authClaims("u-1", "alice", "member")); rec.Code != http.StatusOK {
+		t.Fatalf("update status=%d", rec.Code)
+	}
+	if rec := performTripRequest(http.MethodDelete, "/api/trips/:id", validPath, nil, handler.DeleteTrip, authClaims("u-1", "alice", "member")); rec.Code != http.StatusOK {
+		t.Fatalf("delete status=%d", rec.Code)
+	}
+	if rec := performTripRequest(http.MethodGet, "/api/trips", "/api/trips", nil, NewTripHandler(&tripServiceMock{err: errors.New("failed")}).ListTrips, authClaims("u-1", "alice", "member")); rec.Code != http.StatusInternalServerError {
+		t.Fatalf("list error status=%d", rec.Code)
+	}
+	if rec := performTripRequest(http.MethodPost, "/api/trips", "/api/trips", "invalid", NewTripHandler(&tripServiceMock{}).CreateTrip, authClaims("u-1", "alice", "member")); rec.Code != http.StatusBadRequest {
+		t.Fatalf("invalid JSON status=%d", rec.Code)
 	}
 }

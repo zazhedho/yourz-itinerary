@@ -159,7 +159,7 @@ func googleAllowedAudiences() map[string]struct{} {
 
 	rawList := utils.GetEnv("GOOGLE_CLIENT_IDS", "")
 	if rawList != "" {
-		for _, item := range strings.Split(rawList, ",") {
+		for item := range strings.SplitSeq(rawList, ",") {
 			normalized := strings.TrimSpace(item)
 			if normalized != "" {
 				values[normalized] = struct{}{}

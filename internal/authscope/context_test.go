@@ -79,3 +79,10 @@ func TestActorUserIDAndRolePreferOriginalImpersonator(t *testing.T) {
 		t.Fatalf("expected original actor role, got %q", scope.ActorRole())
 	}
 }
+
+func TestActorFallsBackToCurrentIdentity(t *testing.T) {
+	scope := New(" user-1 ", "Jane", "member", nil)
+	if scope.ActorUserID() != "user-1" || scope.ActorRole() != "member" {
+		t.Fatalf("unexpected current actor: id=%q role=%q", scope.ActorUserID(), scope.ActorRole())
+	}
+}

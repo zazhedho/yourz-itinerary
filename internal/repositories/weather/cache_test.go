@@ -12,6 +12,12 @@ import (
 	redismock "github.com/go-redis/redismock/v9"
 )
 
+func TestNewWeatherCache(t *testing.T) {
+	if NewWeatherCache(nil) == nil {
+		t.Fatal("NewWeatherCache returned nil")
+	}
+}
+
 func TestWeatherCacheDailyRoundTripAndTTL(t *testing.T) {
 	client, mock := redismock.NewClientMock()
 	cache := &WeatherCache{Redis: client}

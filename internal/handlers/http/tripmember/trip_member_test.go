@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -121,5 +122,48 @@ func TestTripMemberDuplicateConflict(t *testing.T) {
 	)
 	if rec.Code != http.StatusConflict {
 		t.Fatalf("expected 409, got %d: %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestTripMemberMutationAndErrorMappings(t *testing.T) {
+	validTrip := "/api/trips/550e8400-e29b-41d4-a716-446655440000"
+	validMember := validTrip + "/members/member-1"
+	for _, tc := range []struct {
+		name string
+		err  error
+		want int
+	}{
+		{"member missing", servicetripmember.ErrMemberNotFound, http.StatusNotFound},
+		{"user missing", servicetripmember.ErrUserNotFound, http.StatusNotFound},
+		{"trip missing", serviceshared.ErrTripNotFound, http.StatusNotFound},
+		{"owner remove", servicetripmember.ErrOwnerRemove, http.StatusBadRequest},
+		{"owner leave", servicetripmember.ErrOwnerLeave, http.StatusBadRequest},
+		{"owner role", servicetripmember.ErrOwnerRoleChange, http.StatusBadRequest},
+		{"internal", errors.New("failed"), http.StatusInternalServerError},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			handler := NewTripMemberHandler(&tripMemberServiceMock{err: tc.err})
+			rec := performTripMemberRequest(http.MethodPut, "/api/trips/:id/members/:member_id", validMember, dto.UpdateTripMemberRoleRequest{Role: "viewer"}, handler.UpdateMemberRole, authClaims("u-1", "alice", "member"))
+			if rec.Code != tc.want {
+				t.Fatalf("got %d want %d: %s", rec.Code, tc.want, rec.Body.String())
+			}
+		})
+	}
+
+	handler := NewTripMemberHandler(&tripMemberServiceMock{member: dto.TripMemberResponse{Id: "member-1", Role: "editor"}})
+	if rec := performTripMemberRequest(http.MethodPut, "/api/trips/:id/members/:member_id", validMember, dto.UpdateTripMemberRoleRequest{Role: "editor"}, handler.UpdateMemberRole, authClaims("u-1", "alice", "member")); rec.Code != http.StatusOK {
+		t.Fatalf("update status=%d", rec.Code)
+	}
+	if rec := performTripMemberRequest(http.MethodDelete, "/api/trips/:id/members/:member_id", validMember, nil, handler.RemoveMember, authClaims("u-1", "alice", "member")); rec.Code != http.StatusOK {
+		t.Fatalf("remove status=%d", rec.Code)
+	}
+	if rec := performTripMemberRequest(http.MethodDelete, "/api/trips/:id/leave", validTrip+"/leave", nil, handler.LeaveTrip, authClaims("u-1", "alice", "member")); rec.Code != http.StatusOK {
+		t.Fatalf("leave status=%d", rec.Code)
+	}
+	if rec := performTripMemberRequest(http.MethodPut, "/api/trips/:id/members", validTrip+"/members", dto.UpdateTripMemberRoleRequest{Role: "viewer"}, handler.UpdateMemberRole, authClaims("u-1", "alice", "member")); rec.Code != http.StatusBadRequest {
+		t.Fatalf("missing member status=%d", rec.Code)
+	}
+	if rec := performTripMemberRequest(http.MethodPost, "/api/trips/:id/members", validTrip+"/members", "invalid", handler.AddMember, authClaims("u-1", "alice", "member")); rec.Code != http.StatusBadRequest {
+		t.Fatalf("invalid JSON status=%d", rec.Code)
 	}
 }

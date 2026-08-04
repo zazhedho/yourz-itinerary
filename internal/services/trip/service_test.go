@@ -1,6 +1,8 @@
 package servicetrip
 
 import (
+	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -8,9 +10,226 @@ import (
 	domainitineraryitem "yourz-itinerary/internal/domain/itineraryitem"
 	domaintrip "yourz-itinerary/internal/domain/trip"
 	domaintripmember "yourz-itinerary/internal/domain/tripmember"
+	domainuser "yourz-itinerary/internal/domain/user"
 	"yourz-itinerary/internal/dto"
 	serviceshared "yourz-itinerary/internal/services/shared"
+	"yourz-itinerary/pkg/filter"
 )
+
+type tripServiceRepoStub struct {
+	trip    domaintrip.Trip
+	trips   []domaintrip.Trip
+	err     error
+	created bool
+	updated bool
+	deleted bool
+}
+
+func (s *tripServiceRepoStub) Store(context.Context, domaintrip.Trip) error { return nil }
+func (s *tripServiceRepoStub) GetByID(context.Context, string) (domaintrip.Trip, error) {
+	return s.trip, s.err
+}
+func (s *tripServiceRepoStub) GetAll(context.Context, filter.BaseParams) ([]domaintrip.Trip, int64, error) {
+	return s.trips, int64(len(s.trips)), s.err
+}
+func (s *tripServiceRepoStub) Update(context.Context, domaintrip.Trip) error {
+	s.updated = true
+	return s.err
+}
+func (s *tripServiceRepoStub) Delete(context.Context, string) error { return nil }
+func (s *tripServiceRepoStub) SoftDelete(context.Context, string, string) error {
+	s.deleted = true
+	return s.err
+}
+func (s *tripServiceRepoStub) CreateTrip(_ context.Context, trip domaintrip.Trip, _ domaintripmember.TripMember, _ ...domainitineraryday.ItineraryDay) (domaintrip.Trip, error) {
+	s.created = true
+	return trip, s.err
+}
+func (s *tripServiceRepoStub) ListByMember(context.Context, string) ([]domaintrip.Trip, int64, error) {
+	return s.trips, int64(len(s.trips)), s.err
+}
+
+type tripServiceMemberRepoStub struct {
+	member  domaintripmember.TripMember
+	members []domaintripmember.TripMember
+	err     error
+}
+
+func (s *tripServiceMemberRepoStub) Store(context.Context, domaintripmember.TripMember) error {
+	return nil
+}
+func (s *tripServiceMemberRepoStub) GetByID(context.Context, string) (domaintripmember.TripMember, error) {
+	return s.member, s.err
+}
+func (s *tripServiceMemberRepoStub) GetAll(context.Context, filter.BaseParams) ([]domaintripmember.TripMember, int64, error) {
+	return s.members, int64(len(s.members)), s.err
+}
+func (s *tripServiceMemberRepoStub) Update(context.Context, domaintripmember.TripMember) error {
+	return nil
+}
+func (s *tripServiceMemberRepoStub) Delete(context.Context, string) error             { return nil }
+func (s *tripServiceMemberRepoStub) SoftDelete(context.Context, string, string) error { return nil }
+func (s *tripServiceMemberRepoStub) GetByTripAndUser(context.Context, string, string) (domaintripmember.TripMember, error) {
+	return s.member, s.err
+}
+func (s *tripServiceMemberRepoStub) GetActiveByTripAndUser(context.Context, string, string) (domaintripmember.TripMember, error) {
+	return s.member, s.err
+}
+func (s *tripServiceMemberRepoStub) ListByTrip(context.Context, string) ([]domaintripmember.TripMember, error) {
+	return s.members, s.err
+}
+
+type tripServiceDayRepoStub struct {
+	days    []domainitineraryday.ItineraryDay
+	err     error
+	updated int
+	created int
+	deleted int
+}
+
+func (s *tripServiceDayRepoStub) Store(context.Context, domainitineraryday.ItineraryDay) error {
+	s.created++
+	return nil
+}
+func (s *tripServiceDayRepoStub) GetByID(context.Context, string) (domainitineraryday.ItineraryDay, error) {
+	return domainitineraryday.ItineraryDay{}, s.err
+}
+func (s *tripServiceDayRepoStub) GetAll(context.Context, filter.BaseParams) ([]domainitineraryday.ItineraryDay, int64, error) {
+	return s.days, int64(len(s.days)), s.err
+}
+func (s *tripServiceDayRepoStub) Update(context.Context, domainitineraryday.ItineraryDay) error {
+	s.updated++
+	return nil
+}
+func (s *tripServiceDayRepoStub) Delete(context.Context, string) error { return nil }
+func (s *tripServiceDayRepoStub) SoftDelete(context.Context, string, string) error {
+	s.deleted++
+	return nil
+}
+func (s *tripServiceDayRepoStub) ListByTrip(context.Context, string) ([]domainitineraryday.ItineraryDay, error) {
+	return s.days, s.err
+}
+
+type tripServiceItemRepoStub struct {
+	items map[string][]domainitineraryitem.ItineraryItem
+	err   error
+}
+
+func (s *tripServiceItemRepoStub) Store(context.Context, domainitineraryitem.ItineraryItem) error {
+	return nil
+}
+func (s *tripServiceItemRepoStub) GetByID(context.Context, string) (domainitineraryitem.ItineraryItem, error) {
+	return domainitineraryitem.ItineraryItem{}, s.err
+}
+func (s *tripServiceItemRepoStub) GetAll(context.Context, filter.BaseParams) ([]domainitineraryitem.ItineraryItem, int64, error) {
+	return nil, 0, nil
+}
+func (s *tripServiceItemRepoStub) Update(context.Context, domainitineraryitem.ItineraryItem) error {
+	return nil
+}
+func (s *tripServiceItemRepoStub) Delete(context.Context, string) error             { return nil }
+func (s *tripServiceItemRepoStub) SoftDelete(context.Context, string, string) error { return nil }
+func (s *tripServiceItemRepoStub) GetByDay(_ context.Context, dayId string) ([]domainitineraryitem.ItineraryItem, error) {
+	return s.items[dayId], s.err
+}
+func (s *tripServiceItemRepoStub) GetByIDs(context.Context, []string) ([]domainitineraryitem.ItineraryItem, error) {
+	return nil, nil
+}
+func (s *tripServiceItemRepoStub) Reorder(context.Context, string, []domainitineraryitem.ItineraryItem) error {
+	return nil
+}
+
+type tripServiceUserRepoStub struct {
+	users map[string]domainuser.Users
+	err   error
+}
+
+func (s *tripServiceUserRepoStub) Store(context.Context, domainuser.Users) error { return nil }
+func (s *tripServiceUserRepoStub) GetByID(_ context.Context, id string) (domainuser.Users, error) {
+	return s.users[id], s.err
+}
+func (s *tripServiceUserRepoStub) GetAll(context.Context, filter.BaseParams) ([]domainuser.Users, int64, error) {
+	return nil, 0, nil
+}
+func (s *tripServiceUserRepoStub) Update(context.Context, domainuser.Users) error   { return nil }
+func (s *tripServiceUserRepoStub) Delete(context.Context, string) error             { return nil }
+func (s *tripServiceUserRepoStub) SoftDelete(context.Context, string, string) error { return nil }
+func (s *tripServiceUserRepoStub) GetByEmail(context.Context, string) (domainuser.Users, error) {
+	return domainuser.Users{}, nil
+}
+func (s *tripServiceUserRepoStub) GetByPhone(context.Context, string) (domainuser.Users, error) {
+	return domainuser.Users{}, nil
+}
+
+func tripServiceForTest() (*TripService, *tripServiceRepoStub, *tripServiceDayRepoStub) {
+	tripRepo := &tripServiceRepoStub{}
+	dayRepo := &tripServiceDayRepoStub{}
+	return NewTripService(tripRepo, &tripServiceMemberRepoStub{member: domaintripmember.TripMember{Id: "member-1", TripId: "trip-1", UserId: "user-1", Role: serviceshared.TripRoleOwner}}, dayRepo, &tripServiceItemRepoStub{items: map[string][]domainitineraryitem.ItineraryItem{}}, &tripServiceUserRepoStub{users: map[string]domainuser.Users{"user-1": {Id: "user-1", Name: "Owner"}}}), tripRepo, dayRepo
+}
+
+func TestTripServiceCreateGetListUpdateDelete(t *testing.T) {
+	svc, tripRepo, dayRepo := tripServiceForTest()
+	created, err := svc.CreateTrip(context.Background(), "user-1", dto.CreateTripRequest{Title: " Bali ", Destination: "Bali", StartDate: "2026-08-01", EndDate: "2026-08-02", Timezone: "Asia/Jakarta", CurrencyCode: "idr"})
+	if err != nil || !tripRepo.created || created.Title != "Bali" || created.CurrencyCode != "IDR" {
+		t.Fatalf("create: %+v err=%v", created, err)
+	}
+
+	tripRepo.trip = domaintrip.Trip{Id: "trip-1", OwnerId: "user-1", Title: "Old", CurrencyCode: "IDR"}
+	memberRepo := svc.memberRepo.(*tripServiceMemberRepoStub)
+	memberRepo.members = []domaintripmember.TripMember{{Id: "member-1", TripId: "trip-1", UserId: "user-1", Role: serviceshared.TripRoleOwner}}
+	day := domainitineraryday.ItineraryDay{Id: "day-1", TripId: "trip-1", DayNumber: 1}
+	dayRepo.days = []domainitineraryday.ItineraryDay{day}
+	detail, err := svc.GetTripDetail(context.Background(), "user-1", "trip-1")
+	if err != nil || detail.Id != "trip-1" || len(detail.Members) != 1 || len(detail.Days) != 1 {
+		t.Fatalf("detail: %+v err=%v", detail, err)
+	}
+
+	tripRepo.trips = []domaintrip.Trip{tripRepo.trip}
+	list, err := svc.ListTrips(context.Background(), "user-1")
+	if err != nil || len(list) != 1 || list[0].MemberCount != 1 {
+		t.Fatalf("list: %+v err=%v", list, err)
+	}
+
+	updated, err := svc.UpdateTrip(context.Background(), "user-1", "trip-1", dto.UpdateTripRequest{Title: " New ", Destination: " New Place ", Status: "planned", Timezone: "UTC", CurrencyCode: "usd"})
+	if err != nil || !tripRepo.updated || updated.Title != "New" || updated.CurrencyCode != "USD" {
+		t.Fatalf("update: %+v err=%v", updated, err)
+	}
+	if err := svc.DeleteTrip(context.Background(), "user-1", "trip-1"); err != nil || !tripRepo.deleted {
+		t.Fatalf("delete: err=%v deleted=%v", err, tripRepo.deleted)
+	}
+	if err := svc.DeleteTrip(context.Background(), "other-user", "trip-1"); !errors.Is(err, serviceshared.ErrAccessDenied) {
+		t.Fatalf("delete access err=%v", err)
+	}
+	if dayRepo.created < 0 {
+		t.Fatal("unreachable")
+	}
+}
+
+func TestTripServiceValidationAndAccessErrors(t *testing.T) {
+	svc, _, _ := tripServiceForTest()
+	for _, tc := range []struct {
+		name string
+		req  dto.CreateTripRequest
+		want error
+	}{
+		{"timezone", dto.CreateTripRequest{Timezone: "No/Such"}, ErrInvalidTimezone},
+		{"currency", dto.CreateTripRequest{CurrencyCode: "BAD!"}, ErrInvalidCurrency},
+		{"date", dto.CreateTripRequest{StartDate: "bad"}, serviceshared.ErrInvalidDate},
+		{"range", dto.CreateTripRequest{StartDate: "2026-08-02", EndDate: "2026-08-01"}, ErrInvalidDateRange},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := svc.CreateTrip(context.Background(), "user-1", tc.req)
+			if !errors.Is(err, tc.want) {
+				t.Fatalf("err=%v want=%v", err, tc.want)
+			}
+		})
+	}
+	memberRepo := svc.memberRepo.(*tripServiceMemberRepoStub)
+	memberRepo.member = domaintripmember.TripMember{}
+	if _, err := svc.GetTripDetail(context.Background(), "user-1", "trip-1"); !errors.Is(err, serviceshared.ErrNotMember) {
+		t.Fatalf("member err=%v", err)
+	}
+}
 
 func TestNewTripService(t *testing.T) {
 	svc := NewTripService(nil, nil, nil, nil, nil)

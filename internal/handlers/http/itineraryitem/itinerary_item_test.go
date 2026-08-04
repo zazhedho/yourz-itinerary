@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -135,5 +136,63 @@ func TestItineraryItemForbidden(t *testing.T) {
 	)
 	if rec.Code != http.StatusForbidden {
 		t.Fatalf("expected 403, got %d: %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestItineraryItemHandlerErrorsAndMutations(t *testing.T) {
+	createPath := "/api/days/550e8400-e29b-41d4-a716-446655440000/items"
+	itemPath := "/api/items/550e8400-e29b-41d4-a716-446655440000"
+	reorderPath := "/api/days/550e8400-e29b-41d4-a716-446655440000/items/reorder"
+	for _, tt := range []struct {
+		name   string
+		err    error
+		status int
+	}{
+		{name: "day not found", err: serviceshared.ErrDayNotFound, status: http.StatusNotFound},
+		{name: "invalid coordinates", err: serviceitineraryitem.ErrInvalidCoordinates, status: http.StatusBadRequest},
+		{name: "invalid latitude", err: serviceitineraryitem.ErrInvalidLatitude, status: http.StatusBadRequest},
+		{name: "invalid longitude", err: serviceitineraryitem.ErrInvalidLongitude, status: http.StatusBadRequest},
+		{name: "items not found", err: serviceitineraryitem.ErrReorderItemsNotFound, status: http.StatusBadRequest},
+		{name: "internal error", err: errors.New("unexpected"), status: http.StatusInternalServerError},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			handler := NewItineraryItemHandler(&itineraryItemServiceMock{err: tt.err})
+			rec := performItineraryItemRequest(http.MethodPost, "/api/days/:id/items", createPath,
+				dto.CreateItineraryItemRequest{Title: "Visit"}, handler.CreateItem,
+				authClaims("u-1", "alice", "member"))
+			if tt.name == "items not found" {
+				rec = performItineraryItemRequest(http.MethodPut, "/api/days/:id/items/reorder", reorderPath,
+					dto.ReorderItineraryItemsRequest{ItemIds: []string{"item-1"}}, handler.ReorderItems,
+					authClaims("u-1", "alice", "member"))
+			}
+			if rec.Code != tt.status {
+				t.Fatalf("status = %d, want %d: %s", rec.Code, tt.status, rec.Body.String())
+			}
+		})
+	}
+
+	for _, err := range []error{serviceitineraryitem.ErrReorderDifferentDay, serviceitineraryitem.ErrReorderEmpty} {
+		handler := NewItineraryItemHandler(&itineraryItemServiceMock{err: err})
+		rec := performItineraryItemRequest(http.MethodPut, "/api/days/:id/items/reorder", reorderPath,
+			dto.ReorderItineraryItemsRequest{ItemIds: []string{"item-1"}}, handler.ReorderItems,
+			authClaims("u-1", "alice", "member"))
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("reorder error status = %d, want 400", rec.Code)
+		}
+	}
+
+	handler := NewItineraryItemHandler(&itineraryItemServiceMock{item: dto.ItineraryItemResponse{Id: "item-1"}})
+	if rec := performItineraryItemRequest(http.MethodPut, "/api/items/:id", itemPath,
+		dto.UpdateItineraryItemRequest{Title: "Updated"}, handler.UpdateItem,
+		authClaims("u-1", "alice", "member")); rec.Code != http.StatusOK {
+		t.Fatalf("UpdateItem status = %d, want 200", rec.Code)
+	}
+	if rec := performItineraryItemRequest(http.MethodDelete, "/api/items/:id", itemPath, nil, handler.DeleteItem,
+		authClaims("u-1", "alice", "member")); rec.Code != http.StatusOK {
+		t.Fatalf("DeleteItem status = %d, want 200", rec.Code)
+	}
+	if rec := performItineraryItemRequest(http.MethodPut, "/api/days/:id/items/reorder", reorderPath, nil, handler.ReorderItems,
+		authClaims("u-1", "alice", "member")); rec.Code != http.StatusBadRequest {
+		t.Fatalf("empty body status = %d, want 400", rec.Code)
 	}
 }
